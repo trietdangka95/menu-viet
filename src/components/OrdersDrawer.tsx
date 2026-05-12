@@ -6,9 +6,9 @@ import Image from "next/image";
 import { useEffect } from "react";
 
 export default function OrdersDrawer() {
-  const { orders, isOrdersOpen, toggleOrders, updateOrderStatus } = useCartStore();
+  const { orders, isOrdersOpen, toggleOrders, updateOrderStatus, selectedTable } = useCartStore();
 
-
+  const tableOrders = orders.filter(o => o.tableNumber === selectedTable);
 
   if (!isOrdersOpen) return null;
 
@@ -23,7 +23,7 @@ export default function OrdersDrawer() {
         <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-6 h-6 text-primary" />
-            <h2 className="font-bold text-lg text-gray-900">Đơn đã gọi</h2>
+            <h2 className="font-bold text-lg text-gray-900">Đơn đã gọi - Bàn {selectedTable}</h2>
           </div>
           <button onClick={toggleOrders} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
             <X className="w-5 h-5" />
@@ -31,16 +31,16 @@ export default function OrdersDrawer() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {orders.length === 0 ? (
+          {tableOrders.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
               <ClipboardList className="w-16 h-16 opacity-20" />
-              <p>Bàn chưa gọi món nào</p>
+              <p>Bàn {selectedTable} chưa gọi món nào</p>
             </div>
           ) : (
-            orders.map((order, index) => (
+            tableOrders.map((order, index) => (
               <div key={order.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-4 py-3 bg-orange-50/50 border-b border-gray-100 flex justify-between items-center">
-                  <span className="font-bold text-gray-800 text-sm">Đợt {orders.length - index}</span>
+                  <span className="font-bold text-gray-800 text-sm">Đợt {tableOrders.length - index}</span>
                   <span className="text-xs text-gray-500 font-medium">
                     {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -52,6 +52,7 @@ export default function OrdersDrawer() {
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-100 rounded-full -z-10"></div>
                     
                     <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full -z-10 transition-all duration-1000 ${
+                      !order.isConfirmed ? "w-[5%] bg-red-200" :
                       order.status === "pending" ? "w-[10%] bg-orange-200" :
                       order.status === "cooking" ? "w-[50%] bg-orange-400" :
                       "w-full bg-green-500"
@@ -59,11 +60,14 @@ export default function OrdersDrawer() {
 
                     <div className="flex flex-col items-center gap-1.5">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
+                        !order.isConfirmed ? "bg-red-500 text-white animate-pulse" :
                         order.status === "pending" ? "bg-white border-2 border-orange-400 text-orange-500 animate-pulse" : "bg-orange-400 text-white"
                       }`}>
                         <Clock className="w-4 h-4" />
                       </div>
-                      <span className={`text-[10px] font-bold ${order.status === "pending" ? "text-orange-600" : "text-gray-400"}`}>Xác nhận</span>
+                      <span className={`text-[10px] font-bold ${!order.isConfirmed ? "text-red-600" : order.status === "pending" ? "text-orange-600" : "text-gray-400"}`}>
+                        {!order.isConfirmed ? "Chờ duyệt" : "Xác nhận"}
+                      </span>
                     </div>
 
                     <div className="flex flex-col items-center gap-1.5">

@@ -38,8 +38,8 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
   if (viewMode === "grid") {
     return (
       <motion.div 
-        layout
-        className="bg-white rounded-[2rem] p-4 shadow-sm border border-gray-100 flex flex-col w-full relative overflow-hidden group hover:shadow-xl hover:shadow-orange-100/50 transition-all duration-300"
+        layoutId={`product-${product.id}`}
+        className="bg-white rounded-[2rem] p-4 shadow-sm border border-gray-100 flex flex-col w-full relative overflow-hidden group hover:shadow-xl hover:shadow-orange-100/50 transition-all duration-300 h-full"
       >
         {/* Badge Section */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
@@ -102,7 +102,7 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
   // List Mode
   return (
     <motion.div 
-      layout
+      layoutId={`product-${product.id}`}
       className="bg-white rounded-[2rem] p-4 shadow-sm border border-gray-100 flex gap-4 w-full relative overflow-hidden group hover:shadow-lg hover:shadow-orange-50/50 transition-all duration-300"
     >
       {/* Badges for List mode */}

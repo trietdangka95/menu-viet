@@ -12,6 +12,7 @@ export type CartItem = {
 };
 
 export type OrderStatus = "pending" | "cooking" | "serving" | "completed";
+export type UserRole = "guest" | "staff" | "admin";
 
 export type Order = {
   id: string;
@@ -20,6 +21,7 @@ export type Order = {
   status: OrderStatus;
   timestamp: number;
   tableNumber: string;
+  isConfirmed: boolean;
 };
 export type MenuItem = {
   id: string;
@@ -37,6 +39,12 @@ interface CartState {
   isOrdersOpen: boolean;
   adminMenu: MenuItem[];
   
+  // Role & Table
+  userRole: UserRole;
+  selectedTable: string;
+  setUserRole: (role: UserRole) => void;
+  setSelectedTable: (table: string) => void;
+  
   addItem: (item: Omit<CartItem, "id">) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -49,7 +57,13 @@ interface CartState {
   submitOrder: () => void;
   toggleOrders: () => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  confirmOrder: (orderId: string) => void;
   clearTableOrders: (tableNumber: string) => void;
+  
+  // Table Management
+  addTable: (tableNumber: string) => void;
+  addMultipleTables: (count: number) => void;
+  removeTable: (tableNumber: string) => void;
   
   // Admin Menu CRUD
   addMenuItem: (item: Omit<MenuItem, "id">) => void;
@@ -70,6 +84,9 @@ export const useCartStore = create<CartState>()(
       orders: [],
       isOrdersOpen: false,
       isAdmin: false,
+      userRole: "guest",
+      selectedTable: "",
+      tables: ["01", "02", "03", "04", "05"],
       adminMenu: [
         {
           id: "1",
@@ -153,9 +170,16 @@ export const useCartStore = create<CartState>()(
 
   toggleOrders: () => set((state) => ({ isOrdersOpen: !state.isOrdersOpen })),
 
+  setUserRole: (role) => set({ userRole: role }),
+  setSelectedTable: (table) => set({ selectedTable: table }),
+
   submitOrder: () => {
-    const { items, getTotalPrice } = get();
+    const { items, getTotalPrice, selectedTable } = get();
     if (items.length === 0) return;
+    if (!selectedTable) {
+      alert("Vui lòng chọn số bàn trước khi đặt món!");
+      return;
+    }
 
     const newOrder: Order = {
       id: Date.now().toString(),
@@ -163,7 +187,8 @@ export const useCartStore = create<CartState>()(
       totalPrice: getTotalPrice(),
       status: "pending",
       timestamp: Date.now(),
-      tableNumber: "05", // Mock table number
+      tableNumber: selectedTable,
+      isConfirmed: false,
     };
 
     set((state) => ({
@@ -181,9 +206,40 @@ export const useCartStore = create<CartState>()(
     }));
   },
 
+  confirmOrder: (orderId) => {
+    set((state) => ({
+      orders: state.orders.map(order => 
+        order.id === orderId ? { ...order, isConfirmed: true } : order
+      )
+    }));
+  },
+
   clearTableOrders: (tableNumber) => {
     set((state) => ({
       orders: state.orders.filter(order => order.tableNumber !== tableNumber)
+    }));
+  },
+
+  addTable: (tableNumber) => {
+    set((state) => ({
+      tables: Array.from(new Set([...state.tables, tableNumber])).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+    }));
+  },
+
+  addMultipleTables: (count) => {
+    set((state) => {
+      const lastTable = state.tables.length > 0 ? [...state.tables].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).pop() : "0";
+      const startNum = parseInt(lastTable || "0") + 1;
+      const newTables = Array.from({ length: count }, (_, i) => (startNum + i).toString().padStart(2, "0"));
+      return {
+        tables: Array.from(new Set([...state.tables, ...newTables])).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+      };
+    });
+  },
+
+  removeTable: (tableNumber) => {
+    set((state) => ({
+      tables: state.tables.filter(t => t !== tableNumber)
     }));
   },
 
@@ -223,8 +279,9 @@ export const useCartStore = create<CartState>()(
       name: "menu-viet-storage",
       partialize: (state) => ({ 
         orders: state.orders,
-        adminMenu: state.adminMenu 
-      }), // Đồng bộ orders và adminMenu
+        adminMenu: state.adminMenu,
+        tables: state.tables
+      }), // Đồng bộ orders, adminMenu và tables
     }
   )
 );

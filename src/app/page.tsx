@@ -4,20 +4,35 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import ProductDetailModal from "@/components/ProductDetailModal";
-import { useCartStore } from "@/store/cartStore";
+import { useCartStore, UserRole } from "@/store/cartStore";
 import { motion } from "framer-motion";
-import { Search, ClipboardList, Bell, Settings, LayoutDashboard, Soup, LayoutGrid, List as ListIcon } from "lucide-react";
+import { Search, ClipboardList, Bell, Settings, LayoutDashboard, Soup, LayoutGrid, List as ListIcon, UserCheck, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const tableParam = searchParams.get("table");
+  
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<string>("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const { getTotalItems, toggleCart, toggleOrders, orders, isAdmin, logout } = useCartStore();
+  const [isTableSelectorOpen, setIsTableSelectorOpen] = useState(false);
+  
+  const { 
+    getTotalItems, toggleCart, toggleOrders, orders, isAdmin, logout,
+    userRole, setUserRole, selectedTable, setSelectedTable 
+  } = useCartStore();
 
   useEffect(() => {
+    // Nếu có table trên URL thì set table và role là guest
+    if (tableParam) {
+      setSelectedTable(tableParam);
+      if (userRole !== "admin") setUserRole("guest");
+    }
+
     fetch("/api/products")
       .then((res) => res.json())
       .then((data) => setProducts(data));
@@ -28,7 +43,7 @@ export default function Home() {
         setCategories(data);
         if (data.length > 0) setActiveTab(data[0].id);
       });
-  }, []);
+  }, [tableParam, setSelectedTable, setUserRole, userRole]);
 
   // Cuộn đến danh mục
   const scrollToCategory = (categoryId: string) => {
@@ -94,11 +109,48 @@ export default function Home() {
               </>
             )}
           </div>
-
-          <div className="bg-orange-50 border-2 border-orange-100 px-4 md:px-6 py-2 rounded-xl flex items-center justify-center shadow-sm gap-2">
-            <span className="text-[10px] md:text-xs text-orange-600 font-bold uppercase tracking-wider hidden md:inline-block">Bàn số</span>
-            <span className="text-[10px] md:text-xs text-orange-600 font-bold uppercase tracking-wider md:hidden mb-0.5">Bàn</span>
-            <span className="font-black text-xl md:text-2xl text-primary leading-none">05</span>
+          
+          {/* Table Badge / Selector */}
+          <div className="flex flex-col items-end">
+            {userRole === "staff" ? (
+              <button 
+                onClick={() => setIsTableSelectorOpen(!isTableSelectorOpen)}
+                className="bg-blue-50 border-2 border-blue-100 px-4 py-2 rounded-xl flex items-center justify-center shadow-sm gap-2 hover:bg-blue-100 transition-colors"
+              >
+                <div className="flex flex-col items-start">
+                  <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider leading-none">Phục vụ bàn</span>
+                  <span className="font-black text-xl text-blue-700 leading-none">{selectedTable || "??"}</span>
+                </div>
+                <ChevronDown size={16} className={`text-blue-600 transition-transform ${isTableSelectorOpen ? "rotate-180" : ""}`} />
+              </button>
+            ) : (
+              <div className="bg-orange-50 border-2 border-orange-100 px-4 md:px-6 py-2 rounded-xl flex items-center justify-center shadow-sm gap-2">
+                <span className="text-[10px] md:text-xs text-orange-600 font-bold uppercase tracking-wider hidden md:inline-block">Bàn số</span>
+                <span className="text-[10px] md:text-xs text-orange-600 font-bold uppercase tracking-wider md:hidden mb-0.5">Bàn</span>
+                <span className="font-black text-xl md:text-2xl text-primary leading-none">{selectedTable || "??"}</span>
+              </div>
+            )}
+            
+            {/* Table Selector Dropdown (Staff Only) */}
+            {isTableSelectorOpen && userRole === "staff" && (
+              <div className="absolute top-20 right-8 w-48 bg-white border border-gray-100 shadow-2xl rounded-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+                <p className="text-[10px] font-bold text-gray-400 uppercase p-2 border-b border-gray-50 mb-1">Chọn bàn phục vụ</p>
+                <div className="grid grid-cols-3 gap-1">
+                  {tables.map(t => (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        setSelectedTable(t);
+                        setIsTableSelectorOpen(false);
+                      }}
+                      className={`py-2 rounded-lg font-bold text-sm transition-colors ${selectedTable === t ? "bg-primary text-white" : "hover:bg-gray-100 text-gray-600"}`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Desktop & Mobile Floating Cart Button */}
@@ -183,14 +235,20 @@ export default function Home() {
                 <span className="w-1.5 h-6 md:h-8 bg-primary rounded-full"></span>
                 {category.name}
               </h3>
-              <div className={viewMode === "grid"
-                ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
-                : "flex flex-col gap-4"
-              }>
+              <div className={`grid gap-4 transition-all duration-500 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}>
                 {catProducts.map((product) => (
-                  <div key={product.id} onClick={() => setSelectedProduct(product)} className="cursor-pointer">
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    key={product.id} 
+                    onClick={() => setSelectedProduct(product)} 
+                    className="cursor-pointer"
+                  >
                     <ProductCard product={product} viewMode={viewMode} />
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -199,12 +257,24 @@ export default function Home() {
       </div>
 
       {/* Footer / Subtle Admin Link */}
-      <footer className="mt-20 pb-10 text-center">
-        {!isAdmin && (
-          <Link href="/admin/menu" className="text-[10px] text-gray-300 hover:text-gray-400 transition-colors uppercase tracking-widest font-bold">
-            Admin Login
-          </Link>
-        )}
+      <footer className="mt-20 pb-10 text-center flex flex-col items-center gap-4">
+        <div className="flex gap-4">
+          <button 
+            onClick={() => setUserRole(userRole === "staff" ? "guest" : "staff")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
+              userRole === "staff" ? "bg-blue-500 text-white shadow-lg shadow-blue-100" : "bg-gray-100 text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <UserCheck size={14} />
+            {userRole === "staff" ? "Staff Mode Active" : "Staff Login"}
+          </button>
+
+          {!isAdmin && (
+            <Link href="/admin/menu" className="bg-gray-100 text-gray-400 hover:text-gray-600 px-4 py-2 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all">
+              Admin Login
+            </Link>
+          )}
+        </div>
       </footer>
 
       {/* Product Detail Modal */}
