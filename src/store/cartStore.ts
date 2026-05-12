@@ -73,6 +73,7 @@ interface CartState {
   // Auth
   isAdmin: boolean;
   login: (password: string) => boolean;
+  staffLogin: (password: string) => boolean;
   logout: () => void;
 }
 
@@ -263,16 +264,24 @@ export const useCartStore = create<CartState>()(
     }));
   },
 
+  staffLogin: (password) => {
+    if (password === "staff123") {
+      set({ userRole: "staff" });
+      return true;
+    }
+    return false;
+  },
+
   login: (password) => {
     if (password === "admin123") {
-      set({ isAdmin: true });
+      set({ isAdmin: true, userRole: "admin" });
       return true;
     }
     return false;
   },
 
   logout: () => {
-    set({ isAdmin: false });
+    set({ isAdmin: false, userRole: "guest" });
   }
     }),
     {
@@ -280,8 +289,10 @@ export const useCartStore = create<CartState>()(
       partialize: (state) => ({ 
         orders: state.orders,
         adminMenu: state.adminMenu,
-        tables: state.tables
-      }), // Đồng bộ orders, adminMenu và tables
+        tables: state.tables,
+        selectedTable: state.selectedTable,
+        userRole: state.userRole
+      }), // Đồng bộ orders, adminMenu, tables, selectedTable và userRole
     }
   )
 );

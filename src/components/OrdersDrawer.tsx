@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useEffect } from "react";
 
 export default function OrdersDrawer() {
-  const { orders, isOrdersOpen, toggleOrders, updateOrderStatus, selectedTable } = useCartStore();
+  const { orders, isOrdersOpen, toggleOrders, updateOrderStatus, confirmOrder, selectedTable, userRole } = useCartStore();
 
   const tableOrders = orders.filter(o => o.tableNumber === selectedTable);
 
@@ -111,9 +111,22 @@ export default function OrdersDrawer() {
                   ))}
                 </div>
                 
-                <div className="px-4 py-3 bg-gray-50 flex justify-between items-center border-t border-gray-100">
-                  <span className="text-xs font-medium text-gray-500">Tổng cộng đợt này</span>
-                  <span className="font-bold text-gray-900">{order.totalPrice.toLocaleString("vi-VN")} ₫</span>
+                <div className="px-4 py-3 bg-gray-50 flex flex-col gap-3 border-t border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium text-gray-500">Tổng cộng đợt này</span>
+                    <span className="font-bold text-gray-900">{order.totalPrice.toLocaleString("vi-VN")} ₫</span>
+                  </div>
+
+                  {/* Staff Confirmation Button */}
+                  {userRole === "staff" && !order.isConfirmed && (
+                    <button
+                      onClick={() => confirmOrder(order.id)}
+                      className="w-full bg-green-500 text-white font-bold py-2 rounded-xl shadow-lg shadow-green-100 hover:bg-green-600 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+                    >
+                      <CheckCircle2 size={16} />
+                      Xác nhận đơn & Báo bếp
+                    </button>
+                  )}
                 </div>
               </div>
             ))

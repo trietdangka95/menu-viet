@@ -1,13 +1,13 @@
 "use client";
 
 import { useCartStore } from "@/store/cartStore";
-import { Utensils, Bell, ClipboardList } from "lucide-react";
+import { Utensils, Bell, ClipboardList, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function MobileBottomNav() {
-  const { getTotalItems, toggleCart, toggleOrders, orders } = useCartStore();
+  const { getTotalItems, toggleCart, toggleOrders, orders, selectedTable } = useCartStore();
   const totalItems = getTotalItems();
-  const activeOrdersCount = orders.filter(o => o.status !== "completed").length;
+  const activeOrdersCount = orders.filter(o => o.tableNumber === selectedTable).length;
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 z-50 px-6 py-3 flex justify-between items-center pb-safe">
@@ -17,6 +17,18 @@ export default function MobileBottomNav() {
       >
         <Utensils className="w-6 h-6 mb-1" />
         <span className="text-[10px] font-bold uppercase">Menu</span>
+      </button>
+
+      <button onClick={toggleCart} className="flex flex-col items-center text-gray-400 hover:text-primary transition-colors relative">
+        <div className="relative">
+          <ShoppingBag className="w-6 h-6 mb-1" />
+          {totalItems > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+              {totalItems}
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] font-medium uppercase mt-0.5">Giỏ hàng</span>
       </button>
 
       <button onClick={toggleOrders} className={`flex flex-col items-center transition-colors relative ${activeOrdersCount > 0 ? "text-primary" : "text-gray-400 hover:text-primary"}`}>
