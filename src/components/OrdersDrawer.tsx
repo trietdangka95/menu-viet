@@ -15,7 +15,7 @@ export default function OrdersDrawer() {
   return (
     <>
       <div 
-        className="fixed inset-0 bg-black/50 z-[100] transition-opacity"
+        className="fixed inset-0 bg-black/50 z-[100] transition-opacity cursor-pointer"
         onClick={toggleOrders}
       />
       

@@ -188,7 +188,7 @@ export default function Home() {
                 : "flex flex-col gap-4"
               }>
                 {catProducts.map((product) => (
-                  <div key={product.id} onClick={() => setSelectedProduct(product)}>
+                  <div key={product.id} onClick={() => setSelectedProduct(product)} className="cursor-pointer">
                     <ProductCard product={product} viewMode={viewMode} />
                   </div>
                 ))}
