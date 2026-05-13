@@ -11,6 +11,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
+import HomeHeader from "@/components/home/HomeHeader";
+import BannerSlider from "@/components/home/BannerSlider";
+import CategoryTabs from "@/components/home/CategoryTabs";
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const tableParam = searchParams.get("table");
@@ -27,40 +31,19 @@ function HomeContent() {
     userRole, setUserRole, selectedTable, setSelectedTable, tables, adminMenu, categories: storeCategories
   } = useCartStore();
 
-  const [currentBanner, setCurrentBanner] = useState(0);
-
   const banners = adminMenu
     .filter(item => item.bannerUrl && item.promoTitle && item.promoDescription && (item.discountPercent || 0) > 0)
     .slice(0, 5);
 
   useEffect(() => {
-    if (banners.length > 1) {
-      const timer = setInterval(() => {
-        setCurrentBanner((prev) => (prev + 1) % banners.length);
-      }, 5000);
-      return () => clearInterval(timer);
-    }
-  }, [banners.length]);
-
-  useEffect(() => {
-    // Kiểm tra role bí mật từ URL (ví dụ: ?role=staff)
     const roleParam = searchParams.get("role");
-    if (roleParam === "staff") {
-      setUserRole("staff");
-    }
+    if (roleParam === "staff") setUserRole("staff");
 
-    // Lấy table từ query param (hỗ trợ cả table và tables)
     const t = searchParams.get("table") || searchParams.get("tables");
-
     if (t) {
-      // Chuẩn hóa số bàn (ví dụ: "8" -> "08")
       const formattedTable = t.length === 1 ? t.padStart(2, "0") : t;
       setSelectedTable(formattedTable);
-
-      // Chỉ tự động chuyển về guest nếu đang không ở các role đặc quyền
-      if (userRole !== "admin" && userRole !== "staff") {
-        setUserRole("guest");
-      }
+      if (userRole !== "admin" && userRole !== "staff") setUserRole("guest");
     }
 
     setProducts(adminMenu);
@@ -69,19 +52,14 @@ function HomeContent() {
     }
   }, [adminMenu, storeCategories, tableParam, setSelectedTable, setUserRole, userRole]);
 
-  // Cuộn đến danh mục
   const scrollToCategory = (categoryName: string) => {
     setActiveTab(categoryName);
     const element = document.getElementById(`category-${categoryName}`);
     if (element) {
-      const headerOffset = 140; // Chiều cao của header + tabs
+      const headerOffset = 140;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
+      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
     }
   };
 
@@ -93,233 +71,32 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
-      {/* Header Section */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-orange-100 rotate-3">
-              <Soup className="text-white w-6 h-6 md:w-7 md:h-7" />
-            </div>
-            <div>
-              <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight leading-none">HOMI</h1>
-              <span className="text-[10px] md:text-xs font-bold text-primary tracking-[0.2em] uppercase">Media</span>
-            </div>
-          </div>
-
-          {/* Table Badge / Selector */}
-          <div className="relative flex flex-col items-end">
-            {userRole === "staff" ? (
-              <button
-                onClick={() => setIsTableSelectorOpen(!isTableSelectorOpen)}
-                className="bg-blue-50 border-2 border-blue-100 px-4 py-2 rounded-xl flex items-center justify-center shadow-sm gap-2 hover:bg-blue-100 transition-colors cursor-pointer"
-              >
-                <div className="flex flex-col items-start">
-                  <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider leading-none">Phục vụ bàn</span>
-                  <span className="font-black text-xl text-blue-700 leading-none">{selectedTable || "??"}</span>
-                </div>
-                <ChevronDown size={16} className={`text-blue-600 transition-transform ${isTableSelectorOpen ? "rotate-180" : ""}`} />
-              </button>
-            ) : (
-              <div className="bg-orange-50 border-2 border-orange-100 px-4 md:px-6 py-2 rounded-xl flex items-center justify-center shadow-sm gap-2">
-                <span className="text-[10px] md:text-xs text-orange-600 font-bold uppercase tracking-wider hidden md:inline-block">Bàn số</span>
-                <span className="text-[10px] md:text-xs text-orange-600 font-bold uppercase tracking-wider md:hidden mb-0.5">Bàn</span>
-                <span className="font-black text-xl md:text-2xl text-primary leading-none">{selectedTable || "??"}</span>
-              </div>
-            )}
-
-            <AnimatePresence>
-              {isTableSelectorOpen && userRole === "staff" && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className="absolute top-full mt-2 right-0 w-48 bg-white border border-gray-100 shadow-2xl rounded-2xl p-2 z-50 overflow-hidden"
-                >
-                  <p className="text-[10px] font-bold text-gray-400 uppercase p-2 border-b border-gray-50 mb-1">Chọn bàn phục vụ</p>
-                  <div className="grid grid-cols-3 gap-1 max-h-[300px] overflow-y-auto p-1">
-                    {tables.map(t => (
-                      <button
-                        key={t}
-                        onClick={() => {
-                          setSelectedTable(t);
-                          setIsTableSelectorOpen(false);
-                        }}
-                        className={`py-2 rounded-lg font-bold text-sm transition-colors cursor-pointer ${selectedTable === t ? "bg-primary text-white" : "hover:bg-gray-100 text-gray-600"}`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Desktop Navigation Actions */}
-          <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={toggleOrders}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-50 text-gray-600 hover:bg-primary/10 hover:text-primary transition-all font-bold text-sm border border-transparent hover:border-primary/20 cursor-pointer"
-            >
-              <ClipboardList size={18} />
-              <span>Đơn đã gọi</span>
-              {orders.filter(o => o.tableNumber === selectedTable).length > 0 && (
-                <span className="w-5 h-5 bg-primary text-white text-[10px] rounded-full flex items-center justify-center">
-                  {orders.filter(o => o.tableNumber === selectedTable).length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={toggleCart}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white hover:bg-orange-600 transition-all font-bold text-sm shadow-lg shadow-orange-100 cursor-pointer"
-            >
-              <ShoppingBag size={18} />
-              <span>Giỏ hàng</span>
-              {getTotalItems() > 0 && (
-                <span className="bg-white text-primary w-5 h-5 rounded-full flex items-center justify-center text-[10px]">
-                  {getTotalItems()}
-                </span>
-              )}
-            </button>
-
-            {userRole === "admin" && (
-              <Link
-                href="/admin"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all font-bold text-sm border border-blue-100 cursor-pointer"
-              >
-                <LayoutDashboard size={18} />
-                <span>Quản lý</span>
-              </Link>
-            )}
-
-            {(userRole === "admin" || userRole === "staff" || userRole === "kitchen") && (
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all font-bold text-sm border border-red-100 cursor-pointer"
-              >
-                <LogOut size={18} />
-                <span>Đăng xuất</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Search Bar & Mode Switcher */}
-        <div className="max-w-7xl mx-auto px-4 md:px-6 pb-4 flex items-center gap-3">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-primary transition-colors" />
-            <input
-              type="text"
-              placeholder="Tìm món ngon tại đây..."
-              className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="bg-gray-50 p-1.5 rounded-2xl flex items-center gap-1">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2.5 rounded-xl transition-all cursor-pointer ${viewMode === "grid" ? "bg-white shadow-sm text-primary" : "text-gray-400"}`}
-            >
-              <LayoutGrid size={20} strokeWidth={2.5} />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2.5 rounded-xl transition-all cursor-pointer ${viewMode === "list" ? "bg-white shadow-sm text-primary" : "text-gray-400"}`}
-            >
-              <ListIcon size={20} strokeWidth={2.5} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <HomeHeader
+        userRole={userRole}
+        selectedTable={selectedTable}
+        tables={tables}
+        isTableSelectorOpen={isTableSelectorOpen}
+        setIsTableSelectorOpen={setIsTableSelectorOpen}
+        setSelectedTable={setSelectedTable}
+        toggleCart={toggleCart}
+        toggleOrders={toggleOrders}
+        logout={logout}
+        getTotalItems={getTotalItems}
+        orderCount={orders.filter(o => o.tableNumber === selectedTable).length}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+      />
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 pt-6 space-y-12">
-        {/* Dynamic Banner Slider */}
-        {banners.length > 0 ? (
-          <div className="relative h-56 md:h-80 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-orange-100 group">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentBanner}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.5 }}
-                className="relative h-full w-full"
-              >
-                <Image
-                  src={banners[currentBanner].bannerUrl || ""}
-                  alt={banners[currentBanner].promoTitle || ""}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 1200px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8 md:p-12">
-                  <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <span className="inline-block bg-red-600 text-white text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full mb-4 shadow-xl uppercase tracking-widest">
-                      Khuyến mãi đặc biệt
-                    </span>
-                    <h2 className="text-white text-3xl md:text-5xl font-black mb-3 leading-tight drop-shadow-lg">
-                      {banners[currentBanner].promoTitle}
-                    </h2>
-                    <p className="text-orange-200 text-sm md:text-xl font-medium drop-shadow">
-                      {banners[currentBanner].promoDescription}
-                    </p>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+        <BannerSlider banners={banners} />
 
-            {/* Banner Indicators */}
-            {banners.length > 1 && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                {banners.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentBanner(idx)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentBanner ? "w-8 bg-white" : "w-2 bg-white/40"}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="relative h-48 md:h-64 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-orange-100">
-            <Image
-              src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=1200"
-              alt="Default Banner"
-              fill
-              className="object-cover opacity-80"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
-              <h2 className="text-white text-3xl md:text-4xl font-black mb-2 tracking-tight">Chào mừng đến với HOMI 🍜</h2>
-              <p className="text-orange-200 font-medium">Hương vị truyền thống, trải nghiệm hiện đại</p>
-            </div>
-          </div>
-        )}
-
-        {/* Category Tabs */}
-        <div className="sticky top-38 z-30 bg-gray-50/80 backdrop-blur-md -mx-4 px-4 overflow-x-auto no-scrollbar">
-          <div className="flex gap-3">
-            {storeCategories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => scrollToCategory(cat)}
-                className={`px-6 py-3 rounded-2xl font-bold whitespace-nowrap transition-all shadow-sm cursor-pointer ${activeTab === cat
-                  ? "bg-primary text-white shadow-orange-200 scale-105"
-                  : "bg-white text-gray-500 hover:bg-orange-50 hover:text-primary"
-                  }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
+        <CategoryTabs
+          categories={storeCategories}
+          activeTab={activeTab}
+          onTabChange={scrollToCategory}
+        />
 
         {/* Product List grouped by Category */}
         <div className="space-y-16">
@@ -391,7 +168,6 @@ function HomeContent() {
         <p className="text-[10px] text-gray-300 font-bold tracking-widest uppercase mt-4">© 2026 Triet Dang</p>
       </footer>
 
-      {/* Product Detail Modal */}
       <ProductDetailModal
         product={selectedProduct}
         isOpen={!!selectedProduct}

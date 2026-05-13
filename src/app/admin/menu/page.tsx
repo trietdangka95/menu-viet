@@ -8,26 +8,20 @@ import { Plus, Search, ChevronLeft, LayoutGrid, List as ListIcon, X } from "luci
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 
+import MenuHeader from "./components/MenuHeader";
+import CategoryManager from "./components/CategoryManager";
+
 export default function AdminMenuPage() {
   const { adminMenu, categories, addCategory, removeCategory } = useCartStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
-  const [newCategoryName, setNewCategoryName] = useState("");
 
   const filteredMenu = adminMenu.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleAddCategory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newCategoryName.trim()) {
-      addCategory(newCategoryName.trim());
-      setNewCategoryName("");
-    }
-  };
 
   const handleEdit = (item: MenuItem) => {
     setEditingItem(item);
@@ -41,87 +35,19 @@ export default function AdminMenuPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] pb-20">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-40 px-4 shadow-sm">
-        <div className="max-w-7xl mx-auto h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-full transition-all border border-gray-100"
-            >
-              <ChevronLeft size={24} className="text-gray-600" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Quản lý Thực đơn</h1>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">{filteredMenu.length} món ăn</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex bg-gray-100 p-1 rounded-xl border border-gray-200">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-white shadow-sm text-orange-500" : "text-gray-400 hover:text-gray-600"}`}
-              >
-                <LayoutGrid size={20} />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-white shadow-sm text-orange-500" : "text-gray-400 hover:text-gray-600"}`}
-              >
-                <ListIcon size={20} />
-              </button>
-            </div>
-
-            <button
-              onClick={handleAddNew}
-              className="bg-gray-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-black shadow-xl shadow-gray-200 transition-all active:scale-95"
-            >
-              <Plus size={20} />
-              <span>Thêm món</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <MenuHeader
+        itemCount={filteredMenu.length}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onAddNew={handleAddNew}
+      />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Category Management Section */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/50 border border-gray-100 mb-8">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-1.5 h-6 bg-orange-500 rounded-full"></div>
-            <h2 className="text-lg font-black text-gray-900 uppercase tracking-wider">Quản lý Danh mục</h2>
-          </div>
-
-          <div className="flex flex-wrap gap-3 mb-8">
-            {categories.map((cat) => (
-              <div key={cat} className="group flex items-center gap-2 bg-gray-50 border border-gray-100 pl-4 pr-2 py-2 rounded-xl hover:bg-white hover:shadow-md transition-all">
-                <span className="text-sm font-bold text-gray-700">{cat}</span>
-                <button
-                  onClick={() => removeCategory(cat)}
-                  className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <form onSubmit={handleAddCategory} className="flex gap-3">
-            <input
-              type="text"
-              placeholder="Nhập tên danh mục mới..."
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              className="flex-1 px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-orange-500 outline-none transition-all font-medium text-gray-700"
-            />
-            <button
-              type="submit"
-              className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-orange-600 shadow-lg shadow-orange-100 transition-all active:scale-95"
-            >
-              Thêm nhanh
-            </button>
-          </form>
-        </div>
+        <CategoryManager
+          categories={categories}
+          onAddCategory={addCategory}
+          onRemoveCategory={removeCategory}
+        />
 
         {/* Search & Filters */}
         <div className="mb-8 flex flex-col md:flex-row gap-4">

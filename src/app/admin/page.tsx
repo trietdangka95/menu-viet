@@ -14,6 +14,9 @@ import {
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import AdminStatCard from "./components/AdminStatCard";
+import AdminMenuCard from "./components/AdminMenuCard";
+
 export default function AdminDashboard() {
   const { logout, orders, adminMenu, revenue } = useCartStore();
 
@@ -65,35 +68,6 @@ export default function AdminDashboard() {
     }
   ];
 
-  const MenuCard = ({ item, index }: { item: any, index: number }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-    >
-      <Link
-        href={item.href}
-        className="group bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-gray-200/50 transition-all flex items-center gap-6"
-      >
-        <div className={`w-16 h-16 ${item.color} text-white rounded-[1.5rem] flex items-center justify-center shadow-lg transition-transform group-hover:scale-110`}>
-          <item.icon size={32} />
-        </div>
-        <div className="flex-1">
-          <h2 className="text-xl font-black text-gray-900 mb-1">{item.title}</h2>
-          <p className="text-gray-400 text-xs font-medium">{item.description}</p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className={`px-4 py-2 rounded-2xl text-sm font-black uppercase tracking-tight shadow-sm ${item.color} text-white whitespace-nowrap`}>
-            {item.stats}
-          </div>
-          <div className="w-8 h-8 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 group-hover:text-white transition-all">
-            <ChevronRight size={18} />
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-12">
       <div className="max-w-5xl mx-auto">
@@ -113,40 +87,27 @@ export default function AdminDashboard() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/50 relative overflow-hidden group">
-            <div className="w-12 h-12 bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6">
-              <TrendingUp size={24} />
-            </div>
-            <div className="text-3xl font-black text-gray-900 mb-1">
-              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(totalRevenue)}
-            </div>
-            <div className="text-xs text-gray-500 font-bold uppercase tracking-widest">Doanh thu tổng</div>
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <TrendingUp size={80} />
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/50 relative overflow-hidden group">
-            <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-6">
-              <ShoppingBag size={24} />
-            </div>
-            <div className="text-3xl font-black text-gray-900 mb-1">{revenue.length}</div>
-            <div className="text-xs text-gray-500 font-bold uppercase tracking-widest">Đơn đã hoàn tất</div>
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <ShoppingBag size={80} />
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/50 relative overflow-hidden group">
-            <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center mb-6">
-              <Users size={24} />
-            </div>
-            <div className="text-3xl font-black text-gray-900 mb-1">{new Set(orders.map(o => o.tableNumber)).size}</div>
-            <div className="text-xs text-gray-500 font-bold uppercase tracking-widest">Bàn đang phục vụ</div>
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Users size={80} />
-            </div>
-          </div>
+          <AdminStatCard
+            icon={TrendingUp}
+            value={new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(totalRevenue)}
+            label="Doanh thu tổng"
+            colorClass="text-green-500"
+            bgClass="bg-green-50"
+          />
+          <AdminStatCard
+            icon={ShoppingBag}
+            value={revenue.length}
+            label="Đơn đã hoàn tất"
+            colorClass="text-blue-500"
+            bgClass="bg-blue-50"
+          />
+          <AdminStatCard
+            icon={Users}
+            value={new Set(orders.map(o => o.tableNumber)).size}
+            label="Bàn đang phục vụ"
+            colorClass="text-orange-500"
+            bgClass="bg-orange-50"
+          />
         </div>
 
         {/* Section 1: Operations */}
@@ -157,7 +118,7 @@ export default function AdminDashboard() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {operationalItems.map((item, index) => (
-              <MenuCard key={item.href} item={item} index={index} />
+              <AdminMenuCard key={item.href} item={item} index={index} />
             ))}
           </div>
         </div>
@@ -170,7 +131,7 @@ export default function AdminDashboard() {
           </div>
           <div className="grid grid-cols-1 gap-4">
             {managementItems.map((item, index) => (
-              <MenuCard key={item.href} item={item} index={index + 2} />
+              <AdminMenuCard key={item.href} item={item} index={index + 2} />
             ))}
           </div>
         </div>
