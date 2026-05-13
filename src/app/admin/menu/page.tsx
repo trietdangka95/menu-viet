@@ -4,21 +4,30 @@ import { useState } from "react";
 import { useCartStore, MenuItem } from "@/store/cartStore";
 import MenuItemCard from "@/components/admin/MenuItemRow";
 import MenuItemForm from "@/components/admin/MenuItemForm";
-import { Plus, Search, ChevronLeft, LayoutGrid, List as ListIcon } from "lucide-react";
+import { Plus, Search, ChevronLeft, LayoutGrid, List as ListIcon, X } from "lucide-react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function AdminMenuPage() {
-  const { adminMenu } = useCartStore();
+  const { adminMenu, categories, addCategory, removeCategory } = useCartStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   const filteredMenu = adminMenu.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newCategoryName.trim()) {
+      addCategory(newCategoryName.trim());
+      setNewCategoryName("");
+    }
+  };
 
   const handleEdit = (item: MenuItem) => {
     setEditingItem(item);
@@ -33,7 +42,7 @@ export default function AdminMenuPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa] pb-20">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-10 px-4">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-40 px-4 shadow-sm">
         <div className="max-w-7xl mx-auto h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
@@ -76,6 +85,44 @@ export default function AdminMenuPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Category Management Section */}
+        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/50 border border-gray-100 mb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-1.5 h-6 bg-orange-500 rounded-full"></div>
+            <h2 className="text-lg font-black text-gray-900 uppercase tracking-wider">Quản lý Danh mục</h2>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mb-8">
+            {categories.map((cat) => (
+              <div key={cat} className="group flex items-center gap-2 bg-gray-50 border border-gray-100 pl-4 pr-2 py-2 rounded-xl hover:bg-white hover:shadow-md transition-all">
+                <span className="text-sm font-bold text-gray-700">{cat}</span>
+                <button
+                  onClick={() => removeCategory(cat)}
+                  className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <form onSubmit={handleAddCategory} className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Nhập tên danh mục mới..."
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              className="flex-1 px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-orange-500 outline-none transition-all font-medium text-gray-700"
+            />
+            <button
+              type="submit"
+              className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-orange-600 shadow-lg shadow-orange-100 transition-all active:scale-95"
+            >
+              Thêm nhanh
+            </button>
+          </form>
+        </div>
+
         {/* Search & Filters */}
         <div className="mb-8 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1 group">
@@ -98,7 +145,7 @@ export default function AdminMenuPage() {
           <AnimatePresence mode="popLayout">
             {filteredMenu.length > 0 ? (
               filteredMenu.map((item) => (
-                <MenuItemCard key={item.id} item={item} onEdit={handleEdit} />
+                <MenuItemCard key={item.id} item={item} onEdit={handleEdit} viewMode={viewMode} />
               ))
             ) : (
               <motion.div

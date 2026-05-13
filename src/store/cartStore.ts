@@ -12,7 +12,7 @@ export type CartItem = {
 };
 
 export type OrderStatus = "pending" | "cooking" | "serving" | "completed";
-export type UserRole = "guest" | "staff" | "admin";
+export type UserRole = "guest" | "staff" | "kitchen" | "admin";
 
 export type Order = {
   id: string;
@@ -23,6 +23,14 @@ export type Order = {
   tableNumber: string;
   isConfirmed: boolean;
 };
+
+export type RevenueRecord = {
+  id: string;
+  orderIds: string[];
+  tableNumber: string;
+  totalAmount: number;
+  timestamp: number;
+};
 export type MenuItem = {
   id: string;
   name: string;
@@ -30,6 +38,11 @@ export type MenuItem = {
   category: string;
   image: string;
   description?: string;
+  // Banner & Promotion fields
+  bannerUrl?: string;
+  promoTitle?: string;
+  promoDescription?: string;
+  discountPercent?: number;
 };
 
 interface CartState {
@@ -38,6 +51,13 @@ interface CartState {
   orders: Order[];
   isOrdersOpen: boolean;
   adminMenu: MenuItem[];
+  categories: string[];
+  revenue: RevenueRecord[];
+
+  // Credentials
+  staffPassword: string;
+  kitchenPassword: string;
+  adminPassword: string;
 
   // Role & Table
   userRole: UserRole;
@@ -66,6 +86,10 @@ interface CartState {
   addMultipleTables: (count: number) => void;
   removeTable: (tableNumber: string) => void;
 
+  // Category Management
+  addCategory: (name: string) => void;
+  removeCategory: (name: string) => void;
+
   // Admin Menu CRUD
   addMenuItem: (item: Omit<MenuItem, "id">) => void;
   updateMenuItem: (id: string, data: Partial<Omit<MenuItem, "id">>) => void;
@@ -75,7 +99,9 @@ interface CartState {
   isAdmin: boolean;
   login: (password: string) => boolean;
   staffLogin: (password: string) => boolean;
+  kitchenLogin: (password: string) => boolean;
   logout: () => void;
+  updatePasswords: (passwords: { staff?: string, kitchen?: string, admin?: string }) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -89,6 +115,11 @@ export const useCartStore = create<CartState>()(
       userRole: "guest",
       selectedTable: "",
       tables: ["01", "02", "03", "04", "05"],
+      categories: ["Món chính", "Món khai vị", "Đồ uống", "Tráng miệng"],
+      revenue: [],
+      staffPassword: "staff123",
+      kitchenPassword: "kitchen123",
+      adminPassword: "admin123",
       adminMenu: [
         {
           id: "1",
@@ -176,7 +207,7 @@ export const useCartStore = create<CartState>()(
       setSelectedTable: (table) => set({ selectedTable: table }),
 
       submitOrder: () => {
-        const { items, getTotalPrice, selectedTable } = get();
+        const { items, getTotalPrice, selectedTable, userRole } = get();
         if (items.length === 0) return;
         if (!selectedTable) {
           alert("Vui lòng chọn số bàn trước khi đặt món!");
@@ -190,7 +221,7 @@ export const useCartStore = create<CartState>()(
           status: "pending",
           timestamp: Date.now(),
           tableNumber: selectedTable,
-          isConfirmed: false,
+          isConfirmed: userRole === "staff",
         };
 
         set((state) => ({
@@ -217,9 +248,25 @@ export const useCartStore = create<CartState>()(
       },
 
       clearTableOrders: (tableNumber) => {
-        set((state) => ({
-          orders: state.orders.filter(order => order.tableNumber !== tableNumber)
-        }));
+        const { orders, revenue } = get();
+        // Handle orders with missing/undefined table numbers (represented as '??' in UI)
+        const tableOrders = orders.filter(o => (o.tableNumber || "??") === tableNumber);
+        
+        if (tableOrders.length > 0) {
+          const totalAmount = tableOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+          const newRecord: RevenueRecord = {
+            id: `REV-${Date.now()}`,
+            orderIds: tableOrders.map(o => o.id),
+            tableNumber: tableNumber === "??" ? "Chưa xác định" : tableNumber,
+            totalAmount,
+            timestamp: Date.now()
+          };
+
+          set((state) => ({
+            revenue: [newRecord, ...state.revenue],
+            orders: state.orders.filter(o => (o.tableNumber || "??") !== tableNumber)
+          }));
+        }
       },
 
       addTable: (tableNumber) => {
@@ -245,6 +292,18 @@ export const useCartStore = create<CartState>()(
         }));
       },
 
+      addCategory: (name) => {
+        set((state) => ({
+          categories: Array.from(new Set([...state.categories, name]))
+        }));
+      },
+
+      removeCategory: (name) => {
+        set((state) => ({
+          categories: state.categories.filter(c => c !== name)
+        }));
+      },
+
       addMenuItem: (item) => {
         set((state) => ({
           adminMenu: [...state.adminMenu, { ...item, id: Date.now().toString() }]
@@ -266,15 +325,23 @@ export const useCartStore = create<CartState>()(
       },
 
       staffLogin: (password) => {
-        if (password === "staff123") {
+        if (password === get().staffPassword) {
           set({ userRole: "staff" });
           return true;
         }
         return false;
       },
 
+      kitchenLogin: (password: string) => {
+        if (password === get().kitchenPassword) {
+          set({ userRole: "kitchen" });
+          return true;
+        }
+        return false;
+      },
+
       login: (password) => {
-        if (password === "admin123") {
+        if (password === get().adminPassword) {
           set({ isAdmin: true, userRole: "admin" });
           return true;
         }
@@ -283,6 +350,14 @@ export const useCartStore = create<CartState>()(
 
       logout: () => {
         set({ isAdmin: false, userRole: "guest" });
+      },
+
+      updatePasswords: (passwords) => {
+        set((state) => ({
+          staffPassword: passwords.staff ?? state.staffPassword,
+          kitchenPassword: passwords.kitchen ?? state.kitchenPassword,
+          adminPassword: passwords.admin ?? state.adminPassword
+        }));
       }
     }),
     {
@@ -291,9 +366,14 @@ export const useCartStore = create<CartState>()(
         orders: state.orders,
         adminMenu: state.adminMenu,
         tables: state.tables,
+        categories: state.categories,
         selectedTable: state.selectedTable,
-        userRole: state.userRole
-      }), // Đồng bộ orders, adminMenu, tables, selectedTable và userRole
+        userRole: state.userRole,
+        revenue: state.revenue,
+        staffPassword: state.staffPassword,
+        kitchenPassword: state.kitchenPassword,
+        adminPassword: state.adminPassword
+      }), // Đồng bộ data
     }
   )
 );

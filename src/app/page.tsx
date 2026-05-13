@@ -6,7 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import ProductDetailModal from "@/components/ProductDetailModal";
 import { useCartStore, UserRole } from "@/store/cartStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ClipboardList, Bell, Settings, LayoutDashboard, Soup, LayoutGrid, List as ListIcon, UserCheck, ChevronDown, ShoppingBag } from "lucide-react";
+import { Search, ClipboardList, Bell, Settings, LayoutDashboard, Soup, LayoutGrid, List as ListIcon, UserCheck, ChevronDown, ShoppingBag, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -16,7 +16,6 @@ function HomeContent() {
   const tableParam = searchParams.get("table");
 
   const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
@@ -25,8 +24,23 @@ function HomeContent() {
 
   const {
     getTotalItems, toggleCart, toggleOrders, orders, isAdmin, logout,
-    userRole, setUserRole, selectedTable, setSelectedTable, tables
+    userRole, setUserRole, selectedTable, setSelectedTable, tables, adminMenu, categories: storeCategories
   } = useCartStore();
+
+  const [currentBanner, setCurrentBanner] = useState(0);
+
+  const banners = adminMenu
+    .filter(item => item.bannerUrl && item.promoTitle && item.promoDescription && (item.discountPercent || 0) > 0)
+    .slice(0, 5);
+
+  useEffect(() => {
+    if (banners.length > 1) {
+      const timer = setInterval(() => {
+        setCurrentBanner((prev) => (prev + 1) % banners.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [banners.length]);
 
   useEffect(() => {
     // Kiểm tra role bí mật từ URL (ví dụ: ?role=staff)
@@ -49,22 +63,16 @@ function HomeContent() {
       }
     }
 
-    fetch("/api/products")
-      .then((res) => res.json())
-      .then((data) => setProducts(data));
-
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then((data) => {
-        setCategories(data);
-        if (data.length > 0) setActiveTab(data[0].id);
-      });
-  }, [tableParam, setSelectedTable, setUserRole, userRole]);
+    setProducts(adminMenu);
+    if (storeCategories.length > 0 && !activeTab) {
+      setActiveTab(storeCategories[0]);
+    }
+  }, [adminMenu, storeCategories, tableParam, setSelectedTable, setUserRole, userRole]);
 
   // Cuộn đến danh mục
-  const scrollToCategory = (categoryId: string) => {
-    setActiveTab(categoryId);
-    const element = document.getElementById(`category-${categoryId}`);
+  const scrollToCategory = (categoryName: string) => {
+    setActiveTab(categoryName);
+    const element = document.getElementById(`category-${categoryName}`);
     if (element) {
       const headerOffset = 140; // Chiều cao của header + tabs
       const elementPosition = element.getBoundingClientRect().top;
@@ -79,7 +87,7 @@ function HomeContent() {
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeTab ? product.categoryId === activeTab : true;
+    const matchesCategory = activeTab ? product.category === activeTab : true;
     return matchesSearch && matchesCategory;
   });
 
@@ -174,6 +182,26 @@ function HomeContent() {
                 </span>
               )}
             </button>
+
+            {userRole === "admin" && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all font-bold text-sm border border-blue-100 cursor-pointer"
+              >
+                <LayoutDashboard size={18} />
+                <span>Quản lý</span>
+              </Link>
+            )}
+
+            {(userRole === "admin" || userRole === "staff" || userRole === "kitchen") && (
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all font-bold text-sm border border-red-100 cursor-pointer"
+              >
+                <LogOut size={18} />
+                <span>Đăng xuất</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -208,33 +236,86 @@ function HomeContent() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 pt-6 space-y-12">
-        {/* Banner Section */}
-        <div className="relative h-48 md:h-64 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-orange-100">
-          <Image
-            src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=1200"
-            alt="Hero Banner"
-            fill
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
-            <h2 className="text-white text-3xl md:text-4xl font-black mb-2">Giảm 20% hôm nay! 🍜</h2>
-            <p className="text-orange-200 font-medium">Áp dụng cho tất cả các loại trà sữa</p>
+        {/* Dynamic Banner Slider */}
+        {banners.length > 0 ? (
+          <div className="relative h-56 md:h-80 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-orange-100 group">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentBanner}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.5 }}
+                className="relative h-full w-full"
+              >
+                <Image
+                  src={banners[currentBanner].bannerUrl || ""}
+                  alt={banners[currentBanner].promoTitle || ""}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8 md:p-12">
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <span className="inline-block bg-red-600 text-white text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full mb-4 shadow-xl uppercase tracking-widest">
+                      Khuyến mãi đặc biệt
+                    </span>
+                    <h2 className="text-white text-3xl md:text-5xl font-black mb-3 leading-tight drop-shadow-lg">
+                      {banners[currentBanner].promoTitle}
+                    </h2>
+                    <p className="text-orange-200 text-sm md:text-xl font-medium drop-shadow">
+                      {banners[currentBanner].promoDescription}
+                    </p>
+                  </motion.div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Banner Indicators */}
+            {banners.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                {banners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBanner(idx)}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentBanner ? "w-8 bg-white" : "w-2 bg-white/40"}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="relative h-48 md:h-64 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-orange-100">
+            <Image
+              src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=1200"
+              alt="Default Banner"
+              fill
+              className="object-cover opacity-80"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+              <h2 className="text-white text-3xl md:text-4xl font-black mb-2 tracking-tight">Chào mừng đến với HOMI 🍜</h2>
+              <p className="text-orange-200 font-medium">Hương vị truyền thống, trải nghiệm hiện đại</p>
+            </div>
+          </div>
+        )}
 
         {/* Category Tabs */}
-        <div className="sticky top-40 z-30 bg-gray-50/80 backdrop-blur-md py-4 -mx-4 px-4 overflow-x-auto no-scrollbar">
+        <div className="sticky top-38 z-30 bg-gray-50/80 backdrop-blur-md -mx-4 px-4 overflow-x-auto no-scrollbar">
           <div className="flex gap-3">
-            {categories.map((category) => (
+            {storeCategories.map((cat) => (
               <button
-                key={category.id}
-                onClick={() => scrollToCategory(category.id)}
-                className={`px-6 py-3 rounded-2xl font-bold whitespace-nowrap transition-all shadow-sm cursor-pointer ${activeTab === category.id
+                key={cat}
+                onClick={() => scrollToCategory(cat)}
+                className={`px-6 py-3 rounded-2xl font-bold whitespace-nowrap transition-all shadow-sm cursor-pointer ${activeTab === cat
                   ? "bg-primary text-white shadow-orange-200 scale-105"
                   : "bg-white text-gray-500 hover:bg-orange-50 hover:text-primary"
                   }`}
               >
-                {category.name}
+                {cat}
               </button>
             ))}
           </div>
@@ -242,15 +323,15 @@ function HomeContent() {
 
         {/* Product List grouped by Category */}
         <div className="space-y-16">
-          {categories.map((category) => {
-            const catProducts = filteredProducts.filter(p => p.categoryId === category.id);
+          {storeCategories.map((cat) => {
+            const catProducts = filteredProducts.filter(p => p.category === cat);
             if (catProducts.length === 0) return null;
 
             return (
-              <div key={category.id} id={`category-${category.id}`} className="scroll-mt-60">
+              <div key={cat} id={`category-${cat}`} className="scroll-mt-60">
                 <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
                   <span className="w-1.5 h-6 md:h-8 bg-primary rounded-full"></span>
-                  {category.name}
+                  {cat}
                 </h3>
                 <div className={`grid gap-4 transition-all duration-500 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}>
                   {catProducts.map((product) => (
@@ -276,6 +357,37 @@ function HomeContent() {
 
       {/* Footer */}
       <footer className="mt-20 pb-20 text-center flex flex-col items-center gap-4 relative z-10">
+        {(userRole === "admin" || userRole === "staff" || userRole === "kitchen") && (
+          <div className="flex flex-col items-center gap-4 mb-4 md:hidden">
+            <div className="flex items-center gap-6">
+              {userRole === "admin" && (
+                <Link
+                  href="/admin"
+                  className="text-blue-500 hover:text-blue-600 font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                >
+                  <LayoutDashboard size={16} />
+                  Quản lý
+                </Link>
+              )}
+              {userRole === "kitchen" && (
+                <Link
+                  href="/admin/kitchen"
+                  className="text-orange-500 hover:text-orange-600 font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                >
+                  <LayoutDashboard size={16} />
+                  Vào Bếp
+                </Link>
+              )}
+              <button
+                onClick={logout}
+                className="text-red-500 hover:text-red-600 font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+              >
+                <LogOut size={16} />
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        )}
         <p className="text-[10px] text-gray-300 font-bold tracking-widest uppercase mt-4">© 2026 Triet Dang</p>
       </footer>
 

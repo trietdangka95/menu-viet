@@ -1,14 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { X, ClipboardList, CheckCircle2, Clock, ChefHat } from "lucide-react";
 import Image from "next/image";
-import { useEffect } from "react";
 
 export default function OrdersDrawer() {
   const { orders, isOrdersOpen, toggleOrders, updateOrderStatus, confirmOrder, selectedTable, userRole } = useCartStore();
+  const [activeTab, setActiveTab] = useState<"current" | "all" | "serving">("current");
 
   const tableOrders = orders.filter(o => o.tableNumber === selectedTable);
+
+  const displayOrders = userRole === "staff"
+    ? activeTab === "all"
+      ? orders
+      : activeTab === "serving"
+        ? orders.filter(o => o.status === "serving")
+        : tableOrders
+    : tableOrders;
+
+  // Summary for current table
+  const tableSummary = tableOrders.reduce((acc, order) => {
+    if (order.status !== "completed") {
+      order.items.forEach(item => {
+        if (!acc[item.name]) acc[item.name] = { quantity: 0, status: order.status };
+        acc[item.name].quantity += item.quantity;
+      });
+    }
+    return acc;
+  }, {} as Record<string, { quantity: number; status: string }>);
 
   if (!isOrdersOpen) return null;
 
@@ -19,28 +39,97 @@ export default function OrdersDrawer() {
         onClick={toggleOrders}
       />
 
-      <div className="fixed top-0 right-0 h-full w-full sm:w-[450px] bg-gray-50 z-[101] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-primary" />
-            <h2 className="font-bold text-lg text-gray-900">Đơn đã gọi - Bàn {selectedTable}</h2>
+      <div className="fixed top-0 right-0 h-full w-full sm:w-[500px] bg-gray-50 z-[101] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="p-4 border-b border-gray-100 bg-white shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-6 h-6 text-primary" />
+              <h2 className="font-bold text-lg text-gray-900">
+                {userRole === "staff"
+                  ? activeTab === "all"
+                    ? "Tất cả đơn hàng"
+                    : activeTab === "serving"
+                      ? "Món chờ phục vụ"
+                      : `Đơn bàn ${selectedTable}`
+                  : `Đơn đã gọi - Bàn ${selectedTable}`}
+              </h2>
+            </div>
+            <button onClick={toggleOrders} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button onClick={toggleOrders} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Tab Selector for Staff */}
+          {userRole === "staff" && (
+            <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
+              <button
+                onClick={() => setActiveTab("current")}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${activeTab === "current" ? "bg-white shadow-sm text-primary" : "text-gray-500"}`}
+              >
+                Bàn {selectedTable}
+              </button>
+              <button
+                onClick={() => setActiveTab("all")}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${activeTab === "all" ? "bg-white shadow-sm text-primary" : "text-gray-500"}`}
+              >
+                Tất cả ({orders.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("serving")}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${activeTab === "serving" ? "bg-white shadow-sm text-blue-600" : "text-gray-500"} relative`}
+              >
+                Chờ phục vụ ({orders.filter(o => o.status === "serving").length})
+                {orders.filter(o => o.status === "serving").length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {tableOrders.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
+          {/* Table Summary for Staff */}
+          {userRole === "staff" && activeTab === "current" && Object.keys(tableSummary).length > 0 && (
+            <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100 mb-2">
+              <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <ChefHat size={14} />
+                Tổng hợp trạng thái bàn {selectedTable}
+              </h3>
+              <div className="grid grid-cols-1 gap-2">
+                {Object.entries(tableSummary).map(([name, data]) => (
+                  <div key={name} className="flex items-center justify-between bg-white/60 p-2 rounded-xl text-sm">
+                    <span className="font-bold text-gray-700">{name} <span className="text-blue-500">x{data.quantity}</span></span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${data.status === "pending" ? "bg-red-100 text-red-600" :
+                      data.status === "cooking" ? "bg-orange-100 text-orange-600" :
+                        "bg-blue-100 text-blue-600"
+                      }`}>
+                      {data.status === "pending" ? "Chờ làm" : data.status === "cooking" ? "Đang nấu" : "Xong"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {displayOrders.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4 py-20">
               <ClipboardList className="w-16 h-16 opacity-20" />
-              <p>Bàn {selectedTable} chưa gọi món nào</p>
+              <p className="text-sm font-medium">
+                {activeTab === "serving" ? "Không có món nào chờ phục vụ" : "Chưa có món nào"}
+              </p>
             </div>
           ) : (
-            tableOrders.map((order, index) => (
-              <div key={order.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-4 py-3 bg-orange-50/50 border-b border-gray-100 flex justify-between items-center">
-                  <span className="font-bold text-gray-800 text-sm">Đợt {tableOrders.length - index}</span>
+            displayOrders.map((order, index) => (
+              <div key={order.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group hover:border-primary/20 transition-all">
+                <div className={`px-4 py-3 border-b border-gray-100 flex justify-between items-center ${!order.isConfirmed ? "bg-red-50" : order.status === "serving" ? "bg-blue-50" : "bg-orange-50/50"}`}>
+                  <div className="flex items-center gap-2">
+                    {(activeTab === "all" || activeTab === "serving") && (
+                      <span className="bg-primary text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">Bàn {order.tableNumber}</span>
+                    )}
+                    <span className="font-bold text-gray-800 text-sm">
+                      {activeTab === "current" ? `Đợt ${tableOrders.length - index}` : `Mã đơn #${order.id.slice(-4)}`}
+                    </span>
+                  </div>
                   <span className="text-xs text-gray-500 font-medium">
                     {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -52,30 +141,30 @@ export default function OrdersDrawer() {
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-100 rounded-full -z-10"></div>
 
                     <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full -z-10 transition-all duration-1000 ${!order.isConfirmed ? "w-[5%] bg-red-200" :
-                        order.status === "pending" ? "w-[10%] bg-orange-200" :
-                          order.status === "cooking" ? "w-[50%] bg-orange-400" :
-                            "w-full bg-green-500"
+                      order.status === "pending" ? "w-[10%] bg-orange-200" :
+                        order.status === "cooking" ? "w-[50%] bg-orange-400" :
+                          "w-full bg-green-500"
                       }`}></div>
 
                     <div className="flex flex-col items-center gap-1.5">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${!order.isConfirmed ? "bg-red-500 text-white animate-pulse" :
-                          order.status === "pending" ? "bg-white border-2 border-orange-400 text-orange-500 animate-pulse" : "bg-orange-400 text-white"
+                        order.status === "pending" ? "bg-white border-2 border-orange-400 text-orange-500 animate-pulse" : "bg-orange-400 text-white"
                         }`}>
                         <Clock className="w-4 h-4" />
                       </div>
                       <span className={`text-[10px] font-bold ${!order.isConfirmed ? "text-red-600" : order.status === "pending" ? "text-orange-600" : "text-gray-400"}`}>
-                        {!order.isConfirmed ? "Chờ duyệt" : "Xác nhận"}
+                        {!order.isConfirmed ? "Xác nhận" : "Bếp nhận"}
                       </span>
                     </div>
 
                     <div className="flex flex-col items-center gap-1.5">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${order.status === "pending" ? "bg-white border-2 border-gray-200 text-gray-300" :
-                          order.status === "cooking" ? "bg-white border-2 border-orange-500 text-orange-500 animate-pulse" :
-                            "bg-orange-500 text-white"
+                        order.status === "cooking" ? "bg-white border-2 border-orange-500 text-orange-500 animate-pulse" :
+                          "bg-orange-500 text-white"
                         }`}>
                         <ChefHat className="w-4 h-4" />
                       </div>
-                      <span className={`text-[10px] font-bold ${order.status === "cooking" ? "text-orange-600" : "text-gray-400"}`}>Đang làm</span>
+                      <span className={`text-[10px] font-bold ${order.status === "cooking" ? "text-orange-600" : "text-gray-400"}`}>Đang nấu</span>
                     </div>
 
                     <div className="flex flex-col items-center gap-1.5">
@@ -83,7 +172,7 @@ export default function OrdersDrawer() {
                         }`}>
                         <CheckCircle2 className="w-4 h-4" />
                       </div>
-                      <span className={`text-[10px] font-bold ${order.status === "serving" ? "text-green-600" : "text-gray-400"}`}>Đang lên</span>
+                      <span className={`text-[10px] font-bold ${order.status === "serving" ? "text-green-600" : "text-gray-400"}`}>Lên món</span>
                     </div>
                   </div>
                 </div>
@@ -120,7 +209,18 @@ export default function OrdersDrawer() {
                       className="w-full bg-green-500 text-white font-bold py-2 rounded-xl shadow-lg shadow-green-100 hover:bg-green-600 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
                     >
                       <CheckCircle2 size={16} />
-                      Xác nhận đơn & Báo bếp
+                      Xác nhận khách đang ngồi bàn
+                    </button>
+                  )}
+
+                  {/* Staff Serving Button */}
+                  {userRole === "staff" && order.status === "serving" && (
+                    <button
+                      onClick={() => updateOrderStatus(order.id, "completed")}
+                      className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+                    >
+                      <CheckCircle2 size={16} />
+                      Đã phục vụ xong
                     </button>
                   )}
                 </div>

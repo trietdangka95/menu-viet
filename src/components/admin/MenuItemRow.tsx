@@ -7,9 +7,10 @@ import { motion } from "framer-motion";
 interface MenuItemRowProps {
   item: MenuItem;
   onEdit: (item: MenuItem) => void;
+  viewMode?: "grid" | "list";
 }
 
-export default function MenuItemRow({ item, onEdit }: MenuItemRowProps) {
+export default function MenuItemRow({ item, onEdit, viewMode = "list" }: MenuItemRowProps) {
   const { removeMenuItem } = useCartStore();
 
   const formatPrice = (price: number) => {
@@ -19,79 +20,113 @@ export default function MenuItemRow({ item, onEdit }: MenuItemRowProps) {
     }).format(price);
   };
 
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
-    >
-      <div className="flex gap-4">
-        {/* Image Section */}
-        <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-50">
+  const ActionButtons = ({ isGrid }: { isGrid?: boolean }) => (
+    <div className={`flex items-center gap-2 mt-4 ${isGrid ? "justify-start" : "justify-end"}`}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit(item);
+        }}
+        className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all active:scale-95"
+      >
+        <Edit2 size={14} />
+        Sửa
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (confirm(`Bạn có chắc chắn muốn xóa món "${item.name}"?`)) {
+            removeMenuItem(item.id);
+          }
+        }}
+        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-600 hover:text-white transition-all active:scale-95"
+      >
+        <Trash2 size={14} />
+        Xóa
+      </button>
+    </div>
+  );
+
+  if (viewMode === "grid") {
+    return (
+      <motion.div
+        layoutId={`menu-item-${item.id}`}
+        className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-orange-50/50 transition-all group relative overflow-hidden flex flex-col h-full"
+      >
+        <motion.div 
+          layoutId={`image-${item.id}`}
+          className="rounded-2xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-50 relative w-full aspect-video mb-4"
+        >
           <img
             src={item.image}
             alt={item.name}
             className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
           />
-        </div>
+          <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm">
+            <span className="text-[10px] font-black text-orange-600 uppercase tracking-wider">{item.category}</span>
+          </div>
+        </motion.div>
 
-        {/* Content Section */}
-        <div className="flex-1 flex flex-col justify-between py-1">
+        <div className="flex-1 flex flex-col justify-between">
           <div>
-            <div className="flex items-start justify-between">
-              <h3 className="font-bold text-gray-900 text-lg leading-tight group-hover:text-orange-500 transition-colors">
-                {item.name}
-              </h3>
-              <div className="text-lg font-black text-orange-600">
-                {formatPrice(item.price)}
-              </div>
-            </div>
+            <motion.h3 layoutId={`name-${item.id}`} className="font-bold text-gray-900 text-lg leading-tight group-hover:text-orange-500 transition-colors">
+              {item.name}
+            </motion.h3>
+            <motion.div layoutId={`price-${item.id}`} className="font-black text-orange-600 text-xl mt-1">
+              {formatPrice(item.price)}
+            </motion.div>
 
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-wider">
-                <Tag size={12} />
-                {item.category}
-              </div>
-              {item.description && (
-                <div className="flex items-center gap-1 text-gray-400 text-[11px] font-medium">
-                  <Info size={12} />
-                  <span className="line-clamp-1">{item.description}</span>
-                </div>
-              )}
-            </div>
+            {item.description && (
+              <p className="text-gray-400 text-[11px] font-medium mt-2 line-clamp-2">
+                {item.description}
+              </p>
+            )}
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 mt-4">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(item);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all active:scale-95"
-            >
-              <Edit2 size={14} />
-              Sửa
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm(`Bạn có chắc chắn muốn xóa món "${item.name}"?`)) {
-                  removeMenuItem(item.id);
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-600 hover:text-white transition-all active:scale-95"
-            >
-              <Trash2 size={14} />
-              Xóa
-            </button>
-          </div>
+          <ActionButtons isGrid />
         </div>
-      </div>
+        <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-orange-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity -z-10 scale-150"></div>
+      </motion.div>
+    );
+  }
 
-      {/* Decorative background element */}
-      <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-gray-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity -z-10 scale-150"></div>
+  return (
+    <motion.div
+      layoutId={`menu-item-${item.id}`}
+      className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-orange-50/50 transition-all group relative overflow-hidden flex flex-row gap-4"
+    >
+      <motion.div 
+        layoutId={`image-${item.id}`}
+        className="rounded-2xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-50 relative w-24 h-24"
+      >
+        <img
+          src={item.image}
+          alt={item.name}
+          className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
+        />
+        <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-white/90 backdrop-blur-sm rounded-md shadow-sm">
+          <span className="text-[8px] font-black text-orange-600 uppercase tracking-wider">{item.category}</span>
+        </div>
+      </motion.div>
+
+      <div className="flex-1 flex flex-col justify-between py-1">
+        <div>
+          <div className="flex items-start justify-between">
+            <motion.h3 layoutId={`name-${item.id}`} className="font-bold text-gray-900 text-lg leading-tight group-hover:text-orange-500 transition-colors">
+              {item.name}
+            </motion.h3>
+            <motion.div layoutId={`price-${item.id}`} className="font-black text-orange-600 text-lg">
+              {formatPrice(item.price)}
+            </motion.div>
+          </div>
+          {item.description && (
+            <p className="text-gray-400 text-[11px] font-medium mt-1 line-clamp-1">
+              {item.description}
+            </p>
+          )}
+        </div>
+        <ActionButtons />
+      </div>
+      <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-orange-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity -z-10 scale-150"></div>
     </motion.div>
   );
 }

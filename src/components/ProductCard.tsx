@@ -11,20 +11,24 @@ type Product = {
   name: string;
   description: string;
   price: number;
-  originalPrice: number | null;
   image: string;
-  isNew: boolean;
-  isHot: boolean;
+  isNew?: boolean;
+  isHot?: boolean;
+  discountPercent?: number;
 };
 
 export default function ProductCard({ product, viewMode = "list" }: { product: Product, viewMode?: "grid" | "list" }) {
   const { addItem } = useCartStore();
 
+  const discountPercent = product.discountPercent || 0;
+  const hasDiscount = discountPercent > 0;
+  const finalPrice = hasDiscount ? product.price * (1 - discountPercent / 100) : product.price;
+
   const handleAddToCart = () => {
     addItem({
       productId: product.id,
       name: product.name,
-      price: product.price,
+      price: finalPrice,
       image: product.image,
       quantity: 1,
       note: "",
@@ -43,6 +47,11 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
       >
         {/* Badge Section */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+          {hasDiscount && (
+            <span className="bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1 animate-bounce">
+              -{discountPercent}%
+            </span>
+          )}
           {product.isNew && (
             <span className="bg-green-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
               <Star size={10} fill="currentColor" /> MỚI
@@ -76,12 +85,12 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
             <div className="flex flex-col">
-              {product.originalPrice && (
+              {hasDiscount && (
                 <span className="text-xs text-gray-300 line-through mb-0.5">
-                  {formatPrice(product.originalPrice)}
+                  {formatPrice(product.price)}
                 </span>
               )}
-              <span className="font-black text-primary text-xl">{formatPrice(product.price)}</span>
+              <span className="font-black text-primary text-xl">{formatPrice(finalPrice)}</span>
             </div>
 
             <button
@@ -125,6 +134,15 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
         />
       </div>
 
+      <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+        {hasDiscount && (
+          <span className="bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md">-{discountPercent}%</span>
+        )}
+        {product.isNew && (
+          <span className="bg-green-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md">MỚI</span>
+        )}
+      </div>
+
       {/* Content */}
       <div className="flex-1 flex flex-col justify-between py-1">
         <div>
@@ -138,12 +156,12 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
 
         <div className="flex items-end justify-between mt-3">
           <div className="flex flex-col">
-            {product.originalPrice && (
+            {hasDiscount && (
               <span className="text-[11px] text-gray-300 line-through mb-0.5">
-                {formatPrice(product.originalPrice)}
+                {formatPrice(product.price)}
               </span>
             )}
-            <span className="font-black text-primary text-xl leading-none">{formatPrice(product.price)}</span>
+            <span className="font-black text-primary text-xl leading-none">{formatPrice(finalPrice)}</span>
           </div>
 
           <button

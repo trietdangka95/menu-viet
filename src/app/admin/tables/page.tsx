@@ -56,7 +56,7 @@ export default function AdminTablesPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0 print:bg-white print:pb-0">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10 print:hidden">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-40 px-4 shadow-sm print:hidden">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -128,7 +128,22 @@ export default function AdminTablesPage() {
                       {tableOrders.map((order) => (
                         <div key={order.id} className="pb-4 border-b border-gray-50 last:border-0 last:pb-0">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Đơn #{order.id.slice(-4)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Đơn #{order.id.slice(-4)}</span>
+                              <button
+                                onClick={() => {
+                                  if (confirm("Bạn có chắc chắn muốn xóa đơn hàng này?")) {
+                                    useCartStore.getState().orders = useCartStore.getState().orders.filter(o => o.id !== order.id);
+                                    // Trigger a re-render by setting the state
+                                    useCartStore.setState({ orders: useCartStore.getState().orders });
+                                  }
+                                }}
+                                className="text-red-400 hover:text-red-600 transition-colors"
+                                title="Xóa đơn hàng"
+                              >
+                                <XIcon size={14} />
+                              </button>
+                            </div>
                             {!order.isConfirmed ? (
                               <button
                                 onClick={() => confirmOrder(order.id)}
@@ -230,8 +245,8 @@ export default function AdminTablesPage() {
                       <XIcon size={16} />
                     </button>
 
-                    <div className="w-12 h-12 bg-orange-500 text-white rounded-2xl flex items-center justify-center font-black text-xl mb-4 shadow-lg shadow-orange-100">
-                      {t}
+                    <div className={`w-12 h-12 ${t ? "bg-orange-500" : "bg-red-500"} text-white rounded-2xl flex items-center justify-center font-black text-xl mb-4 shadow-lg shadow-orange-100`}>
+                      {t || "??"}
                     </div>
                     <div className="p-3 bg-white border-4 border-gray-50 rounded-3xl mb-4 group-hover:border-orange-50 transition-colors">
                       <QRCodeSVG
