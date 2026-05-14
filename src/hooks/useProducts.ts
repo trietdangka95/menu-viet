@@ -64,3 +64,9 @@ export const useDeleteCategory = () => {
     },
   });
 };
+
+export const useUploadImage = () => {
+  return useMutation({
+    mutationFn: menuApi.uploadImage,
+  });
+};

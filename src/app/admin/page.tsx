@@ -18,13 +18,15 @@ import AdminStatCard from "./components/AdminStatCard";
 import AdminMenuCard from "./components/AdminMenuCard";
 import { useProducts } from "@/hooks/useProducts";
 import { useOrders } from "@/hooks/useOrders";
+import { useInvoices } from "@/hooks/useInvoices";
 
 export default function AdminDashboard() {
-  const { logout, revenue } = useCartStore();
+  const { logout } = useCartStore();
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: orders = [], isLoading: ordersLoading } = useOrders();
+  const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
 
-  const totalRevenue = revenue.reduce((sum, r) => sum + r.totalAmount, 0);
+  const totalRevenue = invoices.reduce((sum, i) => sum + i.totalAmount, 0);
 
   const operationalItems = [
     {
@@ -52,7 +54,7 @@ export default function AdminDashboard() {
       icon: TrendingUp,
       href: "/admin/revenue",
       color: "bg-green-600",
-      stats: `${revenue.length} đơn đã hoàn tất`
+      stats: `${invoices.length} hóa đơn đã xuất`
     },
     {
       title: "Quản lý Thực đơn",
@@ -100,8 +102,8 @@ export default function AdminDashboard() {
           />
           <AdminStatCard
             icon={ShoppingBag}
-            value={revenue.length}
-            label="Đơn đã hoàn tất"
+            value={invoices.length}
+            label="Hóa đơn đã xuất"
             colorClass="text-blue-500"
             bgClass="bg-blue-50"
           />

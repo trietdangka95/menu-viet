@@ -10,6 +10,13 @@ export default function CartDrawer() {
   const { items, isOpen, toggleCart, removeItem, updateQuantity, getTotalItems, getTotalPrice, clearCart, toggleOrders, selectedTable } = useCartStore();
   const createOrder = useCreateOrder();
 
+  const getImageUrl = (url: string) => {
+    if (!url) return 'https://placehold.co/600x400?text=No+Image';
+    if (url.startsWith('http')) return url;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    return `${API_URL}${url}`;
+  };
+
   const handleCheckout = () => {
     if (!selectedTable) {
       alert("Vui lòng chọn bàn trước khi gọi món!");
@@ -72,7 +79,7 @@ export default function CartDrawer() {
             items.map((item) => (
               <div key={item.id} className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex gap-3">
                 <div className="w-16 h-16 rounded-lg bg-gray-50 overflow-hidden relative flex-shrink-0">
-                  <Image src={item.image} alt={item.name} fill className="object-cover" />
+                  <Image src={getImageUrl(item.image)} alt={item.name} fill className="object-cover" />
                 </div>
 
                 <div className="flex-1 flex flex-col justify-between">

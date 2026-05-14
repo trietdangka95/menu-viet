@@ -97,7 +97,7 @@ function HomeContent() {
         toggleOrders={toggleOrders}
         logout={logout}
         getTotalItems={getTotalItems}
-        orderCount={orders.filter(o => o.tableNumber === selectedTable).length}
+        orderCount={orders.filter(o => o.tableNumber === selectedTable && o.status.toLowerCase() !== "completed").length}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         viewMode={viewMode}

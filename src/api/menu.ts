@@ -34,4 +34,15 @@ export const menuApi = {
   deleteCategory: async (id: number): Promise<void> => {
     await axiosInstance.delete(`/categories/${id}`);
   },
+
+  uploadImage: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axiosInstance.post<{ url: string }>('/products/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };

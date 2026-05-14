@@ -14,6 +14,13 @@ export default function OrdersDrawer() {
   const queryClient = useQueryClient();
   const { socket } = useSocket();
 
+  const getImageUrl = (url: string) => {
+    if (!url) return 'https://placehold.co/600x400?text=No+Image';
+    if (url.startsWith('http')) return url;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    return `${API_URL}${url}`;
+  };
+
   // Fetch orders based on role
   const isStaff = userRole === "staff" || userRole === "admin" || userRole === "kitchen";
   const allOrdersQuery = useOrders();
@@ -61,13 +68,15 @@ export default function OrdersDrawer() {
     totalPrice: o.totalAmount || o.items.reduce((sum, i) => sum + (i.product?.price || 0) * i.quantity, 0)
   }));
 
-  const tableOrders = orders.filter(o => o.tableNumber === selectedTable && o.status !== "completed");
+  // Only consider non-completed orders as "active"
+  const activeOrders = orders.filter(o => o.status !== "completed");
+  const tableOrders = activeOrders.filter(o => o.tableNumber === selectedTable);
 
   const displayOrders = userRole === "staff"
     ? activeTab === "all"
-      ? orders
+      ? activeOrders
       : activeTab === "serving"
-        ? orders.filter(o => o.status === "serving")
+        ? activeOrders.filter(o => o.status === "serving")
         : tableOrders
     : tableOrders;
 
@@ -124,14 +133,14 @@ export default function OrdersDrawer() {
                 onClick={() => setActiveTab("all")}
                 className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${activeTab === "all" ? "bg-white shadow-sm text-primary" : "text-gray-500"}`}
               >
-                Tất cả ({orders.length})
+                Tất cả ({activeOrders.length})
               </button>
               <button
                 onClick={() => setActiveTab("serving")}
                 className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${activeTab === "serving" ? "bg-white shadow-sm text-blue-600" : "text-gray-500"} relative`}
               >
-                Chờ phục vụ ({orders.filter(o => o.status === "serving").length})
-                {orders.filter(o => o.status === "serving").length > 0 && (
+                Chờ phục vụ ({activeOrders.filter(o => o.status === "serving").length})
+                {activeOrders.filter(o => o.status === "serving").length > 0 && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
                 )}
               </button>
@@ -233,7 +242,7 @@ export default function OrdersDrawer() {
                   {order.items.map(item => (
                     <div key={item.id} className="flex gap-3">
                       <div className="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden relative flex-shrink-0">
-                        <Image src={item.image} alt={item.name} fill className="object-cover" />
+                        <Image src={getImageUrl(item.image)} alt={item.name} fill className="object-cover" />
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between">

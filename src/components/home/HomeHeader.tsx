@@ -42,10 +42,10 @@ export default function HomeHeader({
 }: HomeHeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-orange-100 rotate-3">
-            <Soup className="text-white w-6 h-6 md:w-7 md:h-7" />
+          <div className="w-9 h-9 md:w-12 md:h-12 bg-primary rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-orange-100 rotate-3">
+            <Soup className="text-white w-5 h-5 md:w-7 md:h-7" />
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight leading-none">
@@ -181,8 +181,8 @@ export default function HomeHeader({
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-primary transition-colors" />
           <input
             type="text"
-            placeholder="Tìm món ngon tại đây..."
-            className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+            placeholder="Tìm món ngon..."
+            className="w-full bg-gray-50 border-none rounded-2xl py-3 md:py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

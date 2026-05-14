@@ -18,13 +18,24 @@ type Product = {
 };
 
 export default function ProductCard({ product, viewMode = "list" }: { product: Product, viewMode?: "grid" | "list" }) {
-  const { addItem } = useCartStore();
+  const { addItem, selectedTable } = useCartStore();
 
   const discountPercent = product.discountPercent || 0;
   const hasDiscount = discountPercent > 0;
   const finalPrice = hasDiscount ? product.price * (1 - discountPercent / 100) : product.price;
 
+  const getImageUrl = (url: string) => {
+    if (!url) return 'https://placehold.co/600x400?text=No+Image';
+    if (url.startsWith('http')) return url;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    return `${API_URL}${url}`;
+  };
+
   const handleAddToCart = () => {
+    if (!selectedTable) {
+      alert("Vui lòng chọn bàn/nhập mã bàn trước khi chọn món!");
+      return;
+    }
     addItem({
       productId: product.id,
       name: product.name,
@@ -67,7 +78,7 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
         {/* Image - Vertical */}
         <div className="aspect-square w-full bg-gray-50 rounded-2xl overflow-hidden relative mb-4">
           <Image
-            src={product.image}
+            src={getImageUrl(product.image)}
             alt={product.name}
             fill
             className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -127,7 +138,7 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
       {/* Image - Horizontal */}
       <div className="w-28 h-32 flex-shrink-0 bg-gray-50 rounded-2xl overflow-hidden relative">
         <Image
-          src={product.image}
+          src={getImageUrl(product.image)}
           alt={product.name}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-500"

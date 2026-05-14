@@ -20,10 +20,14 @@ interface ProductDetailModalProps {
 }
 
 export default function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
-  const { addItem } = useCartStore();
+  const { addItem, selectedTable } = useCartStore();
 
   const handleAddToCart = () => {
     if (!product) return;
+    if (!selectedTable) {
+      alert("Vui lòng chọn bàn/nhập mã bàn trước khi chọn món!");
+      return;
+    }
     addItem({
       productId: product.id,
       name: product.name,
@@ -33,6 +37,13 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
       note: "",
     });
     onClose();
+  };
+
+  const getImageUrl = (url: string) => {
+    if (!url) return 'https://placehold.co/600x400?text=No+Image';
+    if (url.startsWith('http')) return url;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    return `${API_URL}${url}`;
   };
 
   return (
@@ -67,7 +78,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
             {/* Image Section */}
             <div className="relative w-full md:w-1/2 aspect-square md:aspect-auto h-[300px] md:h-auto bg-gray-50">
               <Image
-                src={product.image}
+                src={getImageUrl(product.image)}
                 alt={product.name}
                 fill
                 className="object-cover"

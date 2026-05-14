@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MenuItem } from "@/store/cartStore";
-import { X, Upload, Save } from "lucide-react";
-import { useCreateProduct, useUpdateProduct, useCategories } from "@/hooks/useProducts";
+import { X, Upload, Save, Image as ImageIcon, Loader2 } from "lucide-react";
+import { useCreateProduct, useUpdateProduct, useCategories, useUploadImage } from "@/hooks/useProducts";
 
 interface MenuItemFormProps {
   item?: MenuItem;
@@ -14,6 +14,7 @@ interface MenuItemFormProps {
 export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
+  const uploadImage = useUploadImage();
   const { data: categoriesData = [] } = useCategories();
   const categories = categoriesData.map(c => c.name);
 
@@ -29,17 +30,53 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
     discountPercent: item?.discountPercent || 0,
   });
 
+  const [priceInput, setPriceInput] = useState(item?.price?.toString() || "0");
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await uploadImage.mutateAsync(file);
+      // Backend returns relative path /public/uploads/...
+      // We need to prepend the API URL for full URL
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      setFormData({ ...formData, image: `${API_URL}${result.url}` });
+    } catch (err) {
+      alert("Lỗi khi tải ảnh lên!");
+    }
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove all non-digits
+    const value = e.target.value.replace(/\D/g, "");
+    setPriceInput(value);
+    setFormData({ ...formData, price: Number(value) });
+  };
+
+  const formatPrice = (val: string) => {
+    if (!val || val === "0") return "";
+    return Number(val).toLocaleString("vi-VN");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Find categoryId
     const selectedCategory = categoriesData.find(c => c.name === formData.category);
     const payload = {
-      ...formData,
-      categoryId: selectedCategory?.id || 1, // Fallback
+      name: formData.name,
+      price: formData.price,
+      description: formData.description,
+      image: formData.image,
+      categoryId: selectedCategory?.id || 1,
+      discountPercent: formData.discountPercent,
+      bannerUrl: formData.bannerUrl,
+      promoTitle: formData.promoTitle,
+      promoDescription: formData.promoDescription,
     };
 
-    if (item) {
+    if (item?.id) {
       updateProduct.mutate({ id: item.id, data: payload }, {
         onSuccess: () => onClose(),
       });
@@ -105,16 +142,19 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">
-                  Giá gốc (VNĐ)
+                  Giá món ăn (VNĐ)
                 </label>
-                <input
-                  required
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                  className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-orange-500 outline-none transition-all font-bold text-gray-700"
-                  placeholder="VD: 65000"
-                />
+                <div className="relative">
+                  <input
+                    required
+                    type="text"
+                    value={formatPrice(priceInput)}
+                    onChange={handlePriceChange}
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-orange-500 outline-none transition-all font-bold text-gray-900"
+                    placeholder="Ví dụ: 100.000"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₫</span>
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">
@@ -136,16 +176,53 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
 
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">
-                URL Hình ảnh món
+                Hình ảnh món ăn
               </label>
-              <input
-                required
-                type="text"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-orange-500 outline-none transition-all font-medium text-gray-600"
-                placeholder="https://images.unsplash.com/..."
-              />
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    className="flex-1 px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-orange-500 outline-none transition-all font-medium text-gray-600 text-sm"
+                    placeholder="Dán link ảnh (URL)..."
+                  />
+                  <label className="shrink-0 flex items-center justify-center w-12 h-12 bg-gray-100 rounded-2xl cursor-pointer hover:bg-gray-200 transition-colors">
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      disabled={uploadImage.isPending}
+                    />
+                    {uploadImage.isPending ? (
+                      <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
+                    ) : (
+                      <Upload className="w-5 h-5 text-gray-500" />
+                    )}
+                  </label>
+                </div>
+                
+                {formData.image && (
+                  <div className="relative w-full h-40 rounded-2xl overflow-hidden border-2 border-gray-50 bg-gray-50">
+                    <img 
+                      src={formData.image} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://placehold.co/600x400?text=Lỗi+ảnh';
+                      }}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({ ...formData, image: "" })}
+                      className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
