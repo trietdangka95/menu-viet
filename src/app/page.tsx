@@ -14,12 +14,15 @@ import { Suspense } from "react";
 import HomeHeader from "@/components/home/HomeHeader";
 import BannerSlider from "@/components/home/BannerSlider";
 import CategoryTabs from "@/components/home/CategoryTabs";
+import { useProducts, useCategories } from "@/hooks/useProducts";
 
 function HomeContent() {
   const searchParams = useSearchParams();
   const tableParam = searchParams.get("table");
 
-  const [products, setProducts] = useState<any[]>([]);
+  const { data: productsData, isLoading: productsLoading } = useProducts();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
+
   const [activeTab, setActiveTab] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
@@ -28,10 +31,13 @@ function HomeContent() {
 
   const {
     getTotalItems, toggleCart, toggleOrders, orders, isAdmin, logout,
-    userRole, setUserRole, selectedTable, setSelectedTable, tables, adminMenu, categories: storeCategories
+    userRole, setUserRole, selectedTable, setSelectedTable, tables
   } = useCartStore();
 
-  const banners = adminMenu
+  const products = productsData || [];
+  const storeCategories = categoriesData?.map(c => c.name) || [];
+
+  const banners = products
     .filter(item => item.bannerUrl && item.promoTitle && item.promoDescription && (item.discountPercent || 0) > 0)
     .slice(0, 5);
 
@@ -42,15 +48,24 @@ function HomeContent() {
     const t = searchParams.get("table") || searchParams.get("tables");
     if (t) {
       const formattedTable = t.length === 1 ? t.padStart(2, "0") : t;
-      setSelectedTable(formattedTable);
-      if (userRole !== "admin" && userRole !== "staff") setUserRole("guest");
+      if (selectedTable !== formattedTable) {
+        setSelectedTable(formattedTable);
+      }
+      
+      const isStaffOrAdmin = userRole === "admin" || userRole === "staff" || userRole === "kitchen";
+      if (!isStaffOrAdmin && userRole !== "guest") {
+        setUserRole("guest");
+      }
+    } else {
+      if (userRole === "guest" && selectedTable !== "") {
+        setSelectedTable("");
+      }
     }
 
-    setProducts(adminMenu);
     if (storeCategories.length > 0 && !activeTab) {
       setActiveTab(storeCategories[0]);
     }
-  }, [adminMenu, storeCategories, tableParam, setSelectedTable, setUserRole, userRole]);
+  }, [storeCategories, tableParam, setSelectedTable, setUserRole, userRole, selectedTable]);
 
   const scrollToCategory = (categoryName: string) => {
     setActiveTab(categoryName);
@@ -90,13 +105,19 @@ function HomeContent() {
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 pt-6 space-y-12">
-        <BannerSlider banners={banners} />
+        {productsLoading || categoriesLoading ? (
+          <div className="py-20 text-center font-bold text-gray-400">Đang tải dữ liệu...</div>
+        ) : (
+          <>
+            <BannerSlider banners={banners} />
 
-        <CategoryTabs
-          categories={storeCategories}
-          activeTab={activeTab}
-          onTabChange={scrollToCategory}
-        />
+            <CategoryTabs
+              categories={storeCategories}
+              activeTab={activeTab}
+              onTabChange={scrollToCategory}
+            />
+          </>
+        )}
 
         {/* Product List grouped by Category */}
         <div className="space-y-16">

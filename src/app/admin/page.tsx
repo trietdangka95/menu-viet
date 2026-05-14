@@ -16,9 +16,13 @@ import { motion } from "framer-motion";
 
 import AdminStatCard from "./components/AdminStatCard";
 import AdminMenuCard from "./components/AdminMenuCard";
+import { useProducts } from "@/hooks/useProducts";
+import { useOrders } from "@/hooks/useOrders";
 
 export default function AdminDashboard() {
-  const { logout, orders, adminMenu, revenue } = useCartStore();
+  const { logout, revenue } = useCartStore();
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: orders = [], isLoading: ordersLoading } = useOrders();
 
   const totalRevenue = revenue.reduce((sum, r) => sum + r.totalAmount, 0);
 
@@ -56,7 +60,7 @@ export default function AdminDashboard() {
       icon: Settings,
       href: "/admin/menu",
       color: "bg-purple-600",
-      stats: `${adminMenu.length} món ăn`
+      stats: `${products.length} món ăn`
     },
     {
       title: "Quản lý Tài khoản",

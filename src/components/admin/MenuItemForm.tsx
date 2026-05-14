@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MenuItem, useCartStore } from "@/store/cartStore";
+import { MenuItem } from "@/store/cartStore";
 import { X, Upload, Save } from "lucide-react";
+import { useCreateProduct, useUpdateProduct, useCategories } from "@/hooks/useProducts";
 
 interface MenuItemFormProps {
   item?: MenuItem;
@@ -11,7 +12,11 @@ interface MenuItemFormProps {
 }
 
 export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
-  const { addMenuItem, updateMenuItem, categories } = useCartStore();
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
+  const { data: categoriesData = [] } = useCategories();
+  const categories = categoriesData.map(c => c.name);
+
   const [formData, setFormData] = useState({
     name: item?.name || "",
     price: item?.price || 0,
@@ -26,12 +31,23 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Find categoryId
+    const selectedCategory = categoriesData.find(c => c.name === formData.category);
+    const payload = {
+      ...formData,
+      categoryId: selectedCategory?.id || 1, // Fallback
+    };
+
     if (item) {
-      updateMenuItem(item.id, formData);
+      updateProduct.mutate({ id: item.id, data: payload }, {
+        onSuccess: () => onClose(),
+      });
     } else {
-      addMenuItem(formData);
+      createProduct.mutate(payload, {
+        onSuccess: () => onClose(),
+      });
     }
-    onClose();
   };
 
   return (
@@ -224,10 +240,17 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all flex items-center justify-center gap-2"
+              disabled={createProduct.isPending || updateProduct.isPending}
+              className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <Save size={20} />
-              Lưu thay đổi
+              {createProduct.isPending || updateProduct.isPending ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Save size={20} />
+                  Lưu thay đổi
+                </>
+              )}
             </button>
           </div>
         </form>

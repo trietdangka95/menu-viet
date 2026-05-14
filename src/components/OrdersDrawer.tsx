@@ -4,12 +4,64 @@ import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { X, ClipboardList, CheckCircle2, Clock, ChefHat } from "lucide-react";
 import Image from "next/image";
+import { useOrders, useConfirmOrder, useUpdateOrderStatus, useTableOrders } from "@/hooks/useOrders";
+import { useSocket } from "@/providers/SocketProvider";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 export default function OrdersDrawer() {
-  const { orders, isOrdersOpen, toggleOrders, updateOrderStatus, confirmOrder, selectedTable, userRole } = useCartStore();
+  const { isOrdersOpen, toggleOrders, selectedTable, userRole } = useCartStore();
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
+
+  // Fetch orders based on role
+  const isStaff = userRole === "staff" || userRole === "admin" || userRole === "kitchen";
+  const allOrdersQuery = useOrders();
+  const tableOrdersQuery = useTableOrders(selectedTable);
+
+  const apiOrders = isStaff ? (allOrdersQuery.data || []) : (tableOrdersQuery.data || []);
+  const isLoading = isStaff ? allOrdersQuery.isLoading : tableOrdersQuery.isLoading;
+
+  const confirmOrderMutation = useConfirmOrder();
+  const updateStatusMutation = useUpdateOrderStatus();
   const [activeTab, setActiveTab] = useState<"current" | "all" | "serving">("current");
 
-  const tableOrders = orders.filter(o => o.tableNumber === selectedTable);
+  // Real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const refreshOrders = () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    };
+
+    socket.on('NEW_ORDER_ALERT', refreshOrders);
+    socket.on('ORDER_STATUS_CHANGED', refreshOrders);
+    socket.on('ORDER_READY_TO_COOK', refreshOrders);
+
+    return () => {
+      socket.off('NEW_ORDER_ALERT', refreshOrders);
+      socket.off('ORDER_STATUS_CHANGED', refreshOrders);
+      socket.off('ORDER_READY_TO_COOK', refreshOrders);
+    };
+  }, [socket, queryClient]);
+
+  // Map API data to UI format if necessary (handle casing or field names)
+  const orders = apiOrders.map(o => ({
+    ...o,
+    status: o.status.toLowerCase() as any, // UI expects lowercase
+    timestamp: new Date(o.createdAt).getTime(),
+    isConfirmed: o.status !== 'PENDING', // In API, PENDING means unconfirmed
+    items: o.items.map(i => ({
+      ...i,
+      name: i.product?.name || 'Món ăn',
+      image: i.product?.image || '',
+      price: i.product?.price || 0,
+      id: i.productId
+    })),
+    totalPrice: o.totalAmount || o.items.reduce((sum, i) => sum + (i.product?.price || 0) * i.quantity, 0)
+  }));
+
+  const tableOrders = orders.filter(o => o.tableNumber === selectedTable && o.status !== "completed");
 
   const displayOrders = userRole === "staff"
     ? activeTab === "all"
@@ -205,22 +257,36 @@ export default function OrdersDrawer() {
                   {/* Staff Confirmation Button */}
                   {userRole === "staff" && !order.isConfirmed && (
                     <button
-                      onClick={() => confirmOrder(order.id)}
-                      className="w-full bg-green-500 text-white font-bold py-2 rounded-xl shadow-lg shadow-green-100 hover:bg-green-600 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+                      disabled={confirmOrderMutation.isPending}
+                      onClick={() => confirmOrderMutation.mutate(order.id)}
+                      className="w-full bg-green-500 text-white font-bold py-2 rounded-xl shadow-lg shadow-green-100 hover:bg-green-600 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                     >
-                      <CheckCircle2 size={16} />
-                      Xác nhận khách đang ngồi bàn
+                      {confirmOrderMutation.isPending ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <CheckCircle2 size={16} />
+                          Xác nhận khách đang ngồi bàn
+                        </>
+                      )}
                     </button>
                   )}
 
                   {/* Staff Serving Button */}
                   {userRole === "staff" && order.status === "serving" && (
                     <button
-                      onClick={() => updateOrderStatus(order.id, "completed")}
-                      className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+                      disabled={updateStatusMutation.isPending}
+                      onClick={() => updateStatusMutation.mutate({ id: order.id, status: 'COMPLETED' })}
+                      className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                     >
-                      <CheckCircle2 size={16} />
-                      Đã phục vụ xong
+                      {updateStatusMutation.isPending ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <CheckCircle2 size={16} />
+                          Đã phục vụ xong
+                        </>
+                      )}
                     </button>
                   )}
                 </div>

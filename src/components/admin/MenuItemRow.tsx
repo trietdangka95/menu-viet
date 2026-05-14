@@ -1,8 +1,9 @@
 "use client";
 
-import { MenuItem, useCartStore } from "@/store/cartStore";
+import { MenuItem } from "@/store/cartStore";
 import { Edit2, Trash2, Tag, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { useDeleteProduct } from "@/hooks/useProducts";
 
 interface MenuItemRowProps {
   item: MenuItem;
@@ -11,7 +12,7 @@ interface MenuItemRowProps {
 }
 
 export default function MenuItemRow({ item, onEdit, viewMode = "list" }: MenuItemRowProps) {
-  const { removeMenuItem } = useCartStore();
+  const deleteProduct = useDeleteProduct();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -36,7 +37,7 @@ export default function MenuItemRow({ item, onEdit, viewMode = "list" }: MenuIte
         onClick={(e) => {
           e.stopPropagation();
           if (confirm(`Bạn có chắc chắn muốn xóa món "${item.name}"?`)) {
-            removeMenuItem(item.id);
+            deleteProduct.mutate(item.id);
           }
         }}
         className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-600 hover:text-white transition-all active:scale-95"

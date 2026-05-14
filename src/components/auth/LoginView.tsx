@@ -6,35 +6,31 @@ import { Lock, ChevronLeft, LogIn, UserCheck, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useLogin } from "@/hooks/useAuth";
 
 export default function LoginView({ initialRole = "staff" }: { initialRole?: UserRole }) {
-  const { login, staffLogin, kitchenLogin, staffPassword, kitchenPassword, adminPassword } = useCartStore();
+  const { setUserRole } = useCartStore();
   const [role, setRole] = useState<UserRole>(initialRole);
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
-  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const loginMutation = useLogin();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let success = false;
-    if (role === "admin") {
-      success = login(password);
-    } else if (role === "staff") {
-      success = staffLogin(password);
-    } else if (role === "kitchen") {
-      success = kitchenLogin(password);
-    }
+    const loginData = {
+      username: role === "admin" ? "admin" : role,
+      password: password
+    };
 
-    if (success) {
-      if (role === "admin") {
-        router.push("/admin");
-      } else if (role === "kitchen") {
-        router.push("/admin/kitchen");
-      } else {
-        router.push("/");
-      }
-    } else {
+    console.log('Attempting login with data:', loginData);
+
+    try {
+      const data = await loginMutation.mutateAsync(loginData);
+      console.log('Login successful from component:', data);
+    } catch (err) {
+      console.error('Login failed in component:', err);
       setError(true);
       setTimeout(() => setError(false), 2000);
     }
@@ -42,9 +38,9 @@ export default function LoginView({ initialRole = "staff" }: { initialRole?: Use
 
   const getRoleTheme = () => {
     switch (role) {
-      case "admin": return { color: "bg-purple-600", text: "Quản trị viên", icon: ShieldCheck, accent: "text-purple-600", hint: adminPassword };
-      case "kitchen": return { color: "bg-orange-500", text: "Bộ phận Bếp", icon: LogIn, accent: "text-orange-500", hint: kitchenPassword };
-      default: return { color: "bg-blue-600", text: "Nhân viên phục vụ", icon: UserCheck, accent: "text-blue-600", hint: staffPassword };
+      case "admin": return { color: "bg-purple-600", text: "Quản trị viên", icon: ShieldCheck, accent: "text-purple-600" };
+      case "kitchen": return { color: "bg-orange-500", text: "Bộ phận Bếp", icon: LogIn, accent: "text-orange-500" };
+      default: return { color: "bg-blue-600", text: "Nhân viên phục vụ", icon: UserCheck, accent: "text-blue-600" };
     }
   };
 
@@ -127,17 +123,18 @@ export default function LoginView({ initialRole = "staff" }: { initialRole?: Use
 
               <button
                 type="submit"
-                className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl text-white ${theme.color} hover:brightness-110`}
+                disabled={loginMutation.isPending}
+                className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl text-white ${theme.color} hover:brightness-110 disabled:opacity-50`}
               >
-                <LogIn size={20} strokeWidth={3} />
-                ĐĂNG NHẬP
+                {loginMutation.isPending ? (
+                  <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <LogIn size={20} strokeWidth={3} />
+                    ĐĂNG NHẬP
+                  </>
+                )}
               </button>
-
-              <div className="text-center pt-2">
-                <p className="text-[10px] text-gray-300 font-bold tracking-widest uppercase">
-                  Hint: {theme.hint}
-                </p>
-              </div>
             </form>
           </div>
         </div>

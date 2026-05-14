@@ -4,19 +4,37 @@ import { useCartStore } from "@/store/cartStore";
 import { X, Minus, Plus, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { useCreateOrder } from "@/hooks/useOrders";
 
 export default function CartDrawer() {
-  const { items, isOpen, toggleCart, removeItem, updateQuantity, getTotalItems, getTotalPrice, submitOrder, toggleOrders } = useCartStore();
-  const [isOrdering, setIsOrdering] = useState(false);
+  const { items, isOpen, toggleCart, removeItem, updateQuantity, getTotalItems, getTotalPrice, clearCart, toggleOrders, selectedTable } = useCartStore();
+  const createOrder = useCreateOrder();
 
   const handleCheckout = () => {
-    setIsOrdering(true);
-    // Giả lập delay gửi API
-    setTimeout(() => {
-      submitOrder();
-      setIsOrdering(false);
-      toggleOrders(); // Mở tab Đơn đã gọi lên
-    }, 600);
+    if (!selectedTable) {
+      alert("Vui lòng chọn bàn trước khi gọi món!");
+      return;
+    }
+
+    const orderData = {
+      tableNumber: selectedTable,
+      items: items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        note: item.note
+      }))
+    };
+
+    createOrder.mutate(orderData, {
+      onSuccess: () => {
+        clearCart();
+        toggleCart();
+        toggleOrders();
+      },
+      onError: (error: any) => {
+        alert(error.message || "Không thể gửi đơn hàng. Vui lòng thử lại!");
+      }
+    });
   };
 
   return (
@@ -103,9 +121,14 @@ export default function CartDrawer() {
             </div>
             <button
               onClick={handleCheckout}
-              className="w-full bg-primary text-white font-bold text-lg py-3.5 rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-600 transition-transform active:scale-[0.98]"
+              disabled={createOrder.isPending}
+              className="w-full bg-primary text-white font-bold text-lg py-3.5 rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-600 transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
             >
-              Gửi Order Xuống Bếp
+              {createOrder.isPending ? (
+                <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                "Gửi Order Xuống Bếp"
+              )}
             </button>
           </div>
         )}

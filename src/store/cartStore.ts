@@ -54,11 +54,6 @@ interface CartState {
   categories: string[];
   revenue: RevenueRecord[];
 
-  // Credentials
-  staffPassword: string;
-  kitchenPassword: string;
-  adminPassword: string;
-
   // Role & Table
   userRole: UserRole;
   selectedTable: string;
@@ -95,13 +90,7 @@ interface CartState {
   updateMenuItem: (id: string, data: Partial<Omit<MenuItem, "id">>) => void;
   removeMenuItem: (id: string) => void;
 
-  // Auth
-  isAdmin: boolean;
-  login: (password: string) => boolean;
-  staffLogin: (password: string) => boolean;
-  kitchenLogin: (password: string) => boolean;
   logout: () => void;
-  updatePasswords: (passwords: { staff?: string, kitchen?: string, admin?: string }) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -111,41 +100,12 @@ export const useCartStore = create<CartState>()(
       isOpen: false,
       orders: [],
       isOrdersOpen: false,
-      isAdmin: false,
       userRole: "guest",
       selectedTable: "",
-      tables: ["01", "02", "03", "04", "05"],
-      categories: ["Món chính", "Món khai vị", "Đồ uống", "Tráng miệng"],
+      tables: ["01", "02", "03", "04", "05"], // Keep basic tables for now
+      categories: [],
       revenue: [],
-      staffPassword: "staff123",
-      kitchenPassword: "kitchen123",
-      adminPassword: "admin123",
-      adminMenu: [
-        {
-          id: "1",
-          name: "Phở Bò Tái Lăn",
-          price: 65000,
-          category: "Món chính",
-          image: "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&q=80&w=400",
-          description: "Phở bò truyền thống với thịt bò tái lăn thơm nức mũi."
-        },
-        {
-          id: "2",
-          name: "Bún Chả Hà Nội",
-          price: 55000,
-          category: "Món chính",
-          image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=400",
-          description: "Bún chả đặc sản Hà Nội với thịt nướng than hoa."
-        },
-        {
-          id: "3",
-          name: "Cà Phê Sữa Đá",
-          price: 29000,
-          category: "Đồ uống",
-          image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&q=80&w=400",
-          description: "Cà phê pha phin truyền thống kết hợp sữa đặc."
-        }
-      ],
+      adminMenu: [],
 
       addItem: (item) => {
         set((state) => {
@@ -324,41 +284,9 @@ export const useCartStore = create<CartState>()(
         }));
       },
 
-      staffLogin: (password) => {
-        if (password === get().staffPassword) {
-          set({ userRole: "staff" });
-          return true;
-        }
-        return false;
-      },
-
-      kitchenLogin: (password: string) => {
-        if (password === get().kitchenPassword) {
-          set({ userRole: "kitchen" });
-          return true;
-        }
-        return false;
-      },
-
-      login: (password) => {
-        if (password === get().adminPassword) {
-          set({ isAdmin: true, userRole: "admin" });
-          return true;
-        }
-        return false;
-      },
-
       logout: () => {
-        set({ isAdmin: false, userRole: "guest" });
+        set({ userRole: "guest" });
       },
-
-      updatePasswords: (passwords) => {
-        set((state) => ({
-          staffPassword: passwords.staff ?? state.staffPassword,
-          kitchenPassword: passwords.kitchen ?? state.kitchenPassword,
-          adminPassword: passwords.admin ?? state.adminPassword
-        }));
-      }
     }),
     {
       name: "menu-viet-storage",
@@ -369,10 +297,7 @@ export const useCartStore = create<CartState>()(
         categories: state.categories,
         selectedTable: state.selectedTable,
         userRole: state.userRole,
-        revenue: state.revenue,
-        staffPassword: state.staffPassword,
-        kitchenPassword: state.kitchenPassword,
-        adminPassword: state.adminPassword
+        revenue: state.revenue
       }), // Đồng bộ data
     }
   )

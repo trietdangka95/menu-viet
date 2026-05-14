@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useCartStore, MenuItem } from "@/store/cartStore";
+import { MenuItem } from "@/store/cartStore";
 import MenuItemCard from "@/components/admin/MenuItemRow";
 import MenuItemForm from "@/components/admin/MenuItemForm";
+import { useProducts, useCategories } from "@/hooks/useProducts";
 import { Plus, Search, ChevronLeft, LayoutGrid, List as ListIcon, X } from "lucide-react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,13 +13,21 @@ import MenuHeader from "./components/MenuHeader";
 import CategoryManager from "./components/CategoryManager";
 
 export default function AdminMenuPage() {
-  const { adminMenu, categories, addCategory, removeCategory } = useCartStore();
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: categoriesData = [] } = useCategories();
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
-  const filteredMenu = adminMenu.filter((item) =>
+  const menuItems: MenuItem[] = products.map(p => ({
+    ...p,
+    image: p.image || '',
+    description: p.description || '',
+  }));
+
+  const filteredMenu = menuItems.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -44,9 +53,7 @@ export default function AdminMenuPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <CategoryManager
-          categories={categories}
-          onAddCategory={addCategory}
-          onRemoveCategory={removeCategory}
+          categories={categoriesData}
         />
 
         {/* Search & Filters */}

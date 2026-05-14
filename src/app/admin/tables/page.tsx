@@ -2,18 +2,60 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  ChevronLeft as ChevronLeftIcon, 
-  Receipt as ReceiptIcon, 
-  QrCode as QrCodeIcon, 
-  Printer as PrinterIcon 
+import {
+  ChevronLeft as ChevronLeftIcon,
+  Receipt as ReceiptIcon,
+  QrCode as QrCodeIcon,
+  Printer as PrinterIcon
 } from "lucide-react";
-import { useCartStore, Order } from "@/store/cartStore";
+import { useCartStore } from "@/store/cartStore";
 import TableStatusCard from "./components/TableStatusCard";
 import QRCodeCard from "./components/QRCodeCard";
+import { useOrders, useClearTable, useConfirmOrder } from "@/hooks/useOrders";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { useSocket } from "@/providers/SocketProvider";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminTablesPage() {
-  const { orders, clearTableOrders, confirmOrder, tables, addTable, addMultipleTables, removeTable } = useCartStore();
+  const { tables, addTable, addMultipleTables, removeTable } = useCartStore();
+  const { data: apiOrders = [], isLoading } = useOrders();
+  const clearTableMutation = useClearTable();
+  const confirmOrderMutation = useConfirmOrder();
+  const isMounted = useIsMounted();
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
+
+  // Real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const refreshOrders = () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    };
+
+    socket.on('NEW_ORDER_ALERT', refreshOrders);
+    socket.on('ORDER_STATUS_CHANGED', refreshOrders);
+
+    return () => {
+      socket.off('NEW_ORDER_ALERT', refreshOrders);
+      socket.off('ORDER_STATUS_CHANGED', refreshOrders);
+    };
+  }, [socket, queryClient]);
+
+  const orders = apiOrders.map(o => ({
+    ...o,
+    status: o.status.toLowerCase() as any,
+    timestamp: new Date(o.createdAt).getTime(),
+    items: o.items.map(i => ({
+      ...i,
+      id: i.productId,
+      name: i.product?.name || 'Món ăn',
+      image: i.product?.image || '',
+      price: i.product?.price || 0,
+      note: i.note || '',
+    })),
+    totalPrice: o.totalAmount || o.items.reduce((sum, i) => sum + (i.product?.price || 0) * i.quantity, 0)
+  }));
   const [activeTab, setActiveTab] = useState<"status" | "qr">("status");
   const [baseUrl, setBaseUrl] = useState("");
   const [newTableNum, setNewTableNum] = useState("");
@@ -40,7 +82,7 @@ export default function AdminTablesPage() {
 
   const handleCheckout = (tableNumber: string) => {
     if (confirm(`Xác nhận thanh toán và giải phóng Bàn ${tableNumber}?`)) {
-      clearTableOrders(tableNumber);
+      clearTableMutation.mutate(tableNumber);
     }
   };
 
@@ -56,6 +98,8 @@ export default function AdminTablesPage() {
       setNewTableNum("");
     }
   };
+
+  if (!isMounted) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0 print:bg-white print:pb-0">
@@ -106,7 +150,7 @@ export default function AdminTablesPage() {
                   tableOrders={tableOrders}
                   formatPrice={formatPrice}
                   onCheckout={handleCheckout}
-                  onConfirmOrder={confirmOrder}
+                  onConfirmOrder={(id) => confirmOrderMutation.mutate(id)}
                 />
               ))}
             </div>

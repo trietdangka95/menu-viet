@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "Giải pháp menu điện tử cho nhà hàng",
 };
 
+import Providers from "@/components/Providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,11 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="bg-[#fdfbf7]">
-      <body className={`${inter.className} min-h-screen text-gray-900`}>
-        {children}
-        <CartDrawer />
-        <OrdersDrawer />
-        <MobileBottomNav />
+      <body className={`${inter.className} min-h-screen text-gray-900`} suppressHydrationWarning={true}>
+        <Providers>
+          {children}
+          <CartDrawer />
+          <OrdersDrawer />
+          <MobileBottomNav />
+        </Providers>
       </body>
     </html>
   );

@@ -1,26 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Plus, Loader2 } from "lucide-react";
+import { useCreateCategory, useDeleteCategory } from "@/hooks/useProducts";
+import { Category } from "@/types/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface CategoryManagerProps {
-  categories: string[];
-  onAddCategory: (name: string) => void;
-  onRemoveCategory: (name: string) => void;
+  categories: Category[];
 }
 
-export default function CategoryManager({
-  categories,
-  onAddCategory,
-  onRemoveCategory,
-}: CategoryManagerProps) {
+export default function CategoryManager({ categories }: CategoryManagerProps) {
   const [newCategoryName, setNewCategoryName] = useState("");
+  const createCategoryMutation = useCreateCategory();
+  const deleteCategoryMutation = useDeleteCategory();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newCategoryName.trim()) {
-      onAddCategory(newCategoryName.trim());
-      setNewCategoryName("");
+      createCategoryMutation.mutate(newCategoryName.trim(), {
+        onSuccess: () => {
+          setNewCategoryName("");
+        }
+      });
+    }
+  };
+
+  const handleRemove = (id: number) => {
+    if (confirm("Bạn có chắc chắn muốn xóa danh mục này? Các sản phẩm thuộc danh mục này có thể bị ảnh hưởng.")) {
+      deleteCategoryMutation.mutate(id);
     }
   };
 
@@ -34,20 +42,27 @@ export default function CategoryManager({
       </div>
 
       <div className="flex flex-wrap gap-3 mb-8">
-        {categories.map((cat) => (
-          <div
-            key={cat}
-            className="group flex items-center gap-2 bg-gray-50 border border-gray-100 pl-4 pr-2 py-2 rounded-xl hover:bg-white hover:shadow-md transition-all"
-          >
-            <span className="text-sm font-bold text-gray-700">{cat}</span>
-            <button
-              onClick={() => onRemoveCategory(cat)}
-              className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+        <AnimatePresence mode="popLayout">
+          {categories.map((cat) => (
+            <motion.div
+              layout
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              key={cat.id}
+              className="group flex items-center gap-2 bg-gray-50 border border-gray-100 pl-4 pr-2 py-2 rounded-xl hover:bg-white hover:shadow-md transition-all"
             >
-              <X size={16} />
-            </button>
-          </div>
-        ))}
+              <span className="text-sm font-bold text-gray-700">{cat.name}</span>
+              <button
+                onClick={() => handleRemove(cat.id)}
+                disabled={deleteCategoryMutation.isPending}
+                className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+              >
+                <X size={16} />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-3">
@@ -60,9 +75,15 @@ export default function CategoryManager({
         />
         <button
           type="submit"
-          className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-orange-600 shadow-lg shadow-orange-100 transition-all active:scale-95"
+          disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
+          className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-orange-600 shadow-lg shadow-orange-100 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
         >
-          Thêm nhanh
+          {createCategoryMutation.isPending ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Plus size={16} />
+          )}
+          <span>Thêm nhanh</span>
         </button>
       </form>
     </div>

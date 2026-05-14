@@ -1,14 +1,19 @@
 "use client";
 
-import { useCartStore, RevenueRecord } from "@/store/cartStore";
+import { useInvoices } from "@/hooks/useInvoices";
 import { ChevronLeft, DollarSign, TrendingUp, Calendar, CreditCard, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
 export default function RevenuePage() {
-  const { revenue } = useCartStore();
+  const { data: apiInvoices = [], isLoading } = useInvoices();
   const [searchTerm, setSearchTerm] = useState("");
+
+  const revenue = apiInvoices.map(inv => ({
+    ...inv,
+    timestamp: new Date(inv.createdAt).getTime(),
+  }));
 
   const filteredRevenue = revenue.filter(record => 
     record.tableNumber.includes(searchTerm) || 

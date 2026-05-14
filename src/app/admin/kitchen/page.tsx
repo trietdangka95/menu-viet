@@ -1,13 +1,57 @@
 "use client";
 
-import { useCartStore, OrderStatus } from "@/store/cartStore";
+import { OrderStatus } from "@/store/cartStore";
 import { useEffect, useState, useRef } from "react";
 import OrderTicket from "@/components/kitchen/OrderTicket";
 import { ChevronLeft, LayoutGrid, List } from "lucide-react";
 import Link from "next/link";
+import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { useSocket } from "@/providers/SocketProvider";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function KitchenPage() {
-  const { orders, updateOrderStatus } = useCartStore();
+  const { data: apiOrders = [], isLoading } = useOrders();
+  const updateStatusMutation = useUpdateOrderStatus();
+  const isMounted = useIsMounted();
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
+
+  // Real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const refreshOrders = () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    };
+
+    socket.on('ORDER_READY_TO_COOK', refreshOrders);
+    socket.on('NEW_ORDER_ALERT', refreshOrders);
+    socket.on('ORDER_STATUS_CHANGED', refreshOrders);
+
+    return () => {
+      socket.off('ORDER_READY_TO_COOK', refreshOrders);
+      socket.off('NEW_ORDER_ALERT', refreshOrders);
+      socket.off('ORDER_STATUS_CHANGED', refreshOrders);
+    };
+  }, [socket, queryClient]);
+
+  // Map API data to UI format
+  const orders = apiOrders.map(o => ({
+    ...o,
+    status: o.status.toLowerCase() as any, // UI expects lowercase
+    timestamp: new Date(o.createdAt).getTime(),
+    isConfirmed: o.status !== 'PENDING',
+    totalPrice: o.totalAmount || 0,
+    items: o.items.map(i => ({
+      ...i,
+      id: i.productId, // Use productId as id for CartItem compatibility
+      name: i.product?.name || 'Món ăn',
+      image: i.product?.image || '',
+      price: i.product?.price || 0,
+      note: i.note || '',
+    }))
+  }));
   const audioRef = useRef<HTMLAudioElement>(null);
   const [view, setView] = useState<"board" | "summary">("board");
 
@@ -28,11 +72,14 @@ export default function KitchenPage() {
   }, [orders, prevPendingCount]);
 
   const advanceStatus = (orderId: string, current: OrderStatus) => {
-    let next: OrderStatus | null = null;
-    if (current === "pending") next = "cooking";
-    else if (current === "cooking") next = "serving";
-    else if (current === "serving") next = "completed";
-    if (next) updateOrderStatus(orderId, next);
+    let next: string | null = null;
+    if (current === "pending") next = "COOKING";
+    else if (current === "cooking") next = "SERVING";
+    else if (current === "serving") next = "COMPLETED";
+
+    if (next) {
+      updateStatusMutation.mutate({ id: orderId, status: next });
+    }
   };
 
   const confirmedOrders = orders
@@ -58,6 +105,8 @@ export default function KitchenPage() {
     { status: "serving", title: "🛎️ Chờ phục vụ", color: "bg-blue-50 text-blue-700 border-blue-100" },
     { status: "completed", title: "✅ Hoàn thành", color: "bg-green-50 text-green-700 border-green-100" },
   ];
+
+  if (!isMounted) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -98,69 +147,69 @@ export default function KitchenPage() {
 
       <main className="max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8">
 
-      {view === "board" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {columns.map((col) => {
-            const colOrders = orders.filter((o) => o.status === col.status);
-            return (
-              <section key={col.status} className="flex flex-col h-full min-h-[500px]">
-                <div className={`p-4 rounded-2xl border-b-4 mb-4 flex items-center justify-between ${col.color}`}>
-                  <h2 className="font-black uppercase tracking-wider text-sm">{col.title}</h2>
-                  <span className="bg-white/50 px-2 py-0.5 rounded-lg text-xs font-black">{colOrders.length}</span>
-                </div>
-                <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-250px)] hide-scrollbar">
-                  {confirmedOrders.filter(o => o.status === col.status).map((order) => (
-                    <OrderTicket
-                      key={order.id}
-                      order={order}
-                      onAdvance={() => advanceStatus(order.id, order.status)}
-                    />
-                  ))}
-                  {colOrders.length === 0 && (
-                    <div className="py-20 text-center text-gray-300 italic text-sm">
-                      Trống
-                    </div>
-                  )}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-          <div className="p-8 border-b bg-gray-50/50">
-            <h2 className="text-xl font-black text-gray-800">Danh sách món cần chuẩn bị</h2>
-            <p className="text-sm text-gray-500">Tổng hợp tất cả món từ các đơn hàng Đợi xác nhận & Đang làm</p>
-          </div>
-          <div className="p-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(itemSummary).length > 0 ? (
-                Object.entries(itemSummary).map(([name, data]) => (
-                  <div key={name} className="flex flex-col p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-orange-200 transition-colors">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-lg font-bold text-gray-700">{name}</span>
-                      <span className="w-12 h-12 bg-orange-500 text-white rounded-xl flex items-center justify-center text-xl font-black shadow-lg shadow-orange-100">
-                        {data.count}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {Array.from(data.tables).sort().map(table => (
-                        <span key={table} className="px-2 py-0.5 bg-white border border-gray-100 rounded-md text-[10px] font-black text-gray-500">
-                          Bàn {table}
-                        </span>
-                      ))}
-                    </div>
+        {view === "board" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {columns.map((col) => {
+              const colOrders = orders.filter((o) => o.status === col.status);
+              return (
+                <section key={col.status} className="flex flex-col h-full min-h-[500px]">
+                  <div className={`p-4 rounded-2xl border-b-4 mb-4 flex items-center justify-between ${col.color}`}>
+                    <h2 className="font-black uppercase tracking-wider text-sm">{col.title}</h2>
+                    <span className="bg-white/50 px-2 py-0.5 rounded-lg text-xs font-black">{colOrders.length}</span>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-full py-20 text-center text-gray-400 italic">
-                  Hiện không có món nào đang được yêu cầu.
-                </div>
-              )}
+                  <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-250px)] hide-scrollbar">
+                    {confirmedOrders.filter(o => o.status === col.status).map((order) => (
+                      <OrderTicket
+                        key={order.id}
+                        order={order}
+                        onAdvance={() => advanceStatus(order.id, order.status)}
+                      />
+                    ))}
+                    {colOrders.length === 0 && (
+                      <div className="py-20 text-center text-gray-300 italic text-sm">
+                        Trống
+                      </div>
+                    )}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+            <div className="p-8 border-b bg-gray-50/50">
+              <h2 className="text-xl font-black text-gray-800">Danh sách món cần chuẩn bị</h2>
+              <p className="text-sm text-gray-500">Tổng hợp tất cả món từ các đơn hàng Đợi xác nhận & Đang làm</p>
+            </div>
+            <div className="p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Object.entries(itemSummary).length > 0 ? (
+                  Object.entries(itemSummary).map(([name, data]) => (
+                    <div key={name} className="flex flex-col p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-orange-200 transition-colors">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-lg font-bold text-gray-700">{name}</span>
+                        <span className="w-12 h-12 bg-orange-500 text-white rounded-xl flex items-center justify-center text-xl font-black shadow-lg shadow-orange-100">
+                          {data.count}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {Array.from(data.tables).sort().map(table => (
+                          <span key={table} className="px-2 py-0.5 bg-white border border-gray-100 rounded-md text-[10px] font-black text-gray-500">
+                            Bàn {table}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-20 text-center text-gray-400 italic">
+                    Hiện không có món nào đang được yêu cầu.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </main>
     </div>
   );
