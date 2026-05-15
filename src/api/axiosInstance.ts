@@ -17,6 +17,19 @@ axiosInstance.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+
+      // Add Store ID for multi-tenancy
+      const cartStorage = localStorage.getItem('cart-storage');
+      if (cartStorage) {
+        try {
+          const { state } = JSON.parse(cartStorage);
+          if (state?.storeConfig?.id) {
+            config.headers['x-store-id'] = state.storeConfig.id;
+          }
+        } catch (e) {
+          console.error('Error parsing cart-storage', e);
+        }
+      }
     }
     return config;
   },

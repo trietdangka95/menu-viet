@@ -2,35 +2,52 @@
 
 import { useState } from "react";
 import { useCartStore, UserRole } from "@/store/cartStore";
-import { Lock, ChevronLeft, LogIn, UserCheck, ShieldCheck } from "lucide-react";
+import { Lock, ChevronLeft, LogIn, UserCheck, ShieldCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useLogin } from "@/hooks/useAuth";
 
 export default function LoginView({ initialRole = "staff" }: { initialRole?: UserRole }) {
-  const { setUserRole } = useCartStore();
+  const { login: storeLogin } = useCartStore();
   const [role, setRole] = useState<UserRole>(initialRole);
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
+  const router = useRouter();
 
   const loginMutation = useLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Mapping for login
+    let username = role.toString();
+    if (role === "admin") username = "admin";
+    if (role === "superadmin") username = "superadmin";
+
     const loginData = {
-      username: role === "admin" ? "admin" : role,
+      username: username,
       password: password
     };
 
-    console.log('Attempting login with data:', loginData);
-
     try {
-      const data = await loginMutation.mutateAsync(loginData);
-      console.log('Login successful from component:', data);
+      const res = await loginMutation.mutateAsync(loginData);
+      const normalizedRole = res.role?.toLowerCase();
+      
+      // Update global store
+      storeLogin(normalizedRole as UserRole, res.id, res.storeId);
+      
+      // Redirect based on role
+      if (normalizedRole === "superadmin") {
+        router.push("/superadmin");
+      } else if (normalizedRole === "admin") {
+        router.push("/admin");
+      } else if (normalizedRole === "kitchen") {
+        router.push("/admin/kitchen");
+      } else {
+        router.push("/");
+      }
     } catch (err) {
-      console.error('Login failed in component:', err);
       setError(true);
       setTimeout(() => setError(false), 2000);
     }
@@ -38,6 +55,7 @@ export default function LoginView({ initialRole = "staff" }: { initialRole?: Use
 
   const getRoleTheme = () => {
     switch (role) {
+      case "superadmin": return { color: "bg-gray-900", text: "Super Admin", icon: ShieldAlert, accent: "text-gray-900" };
       case "admin": return { color: "bg-purple-600", text: "Quản trị viên", icon: ShieldCheck, accent: "text-purple-600" };
       case "kitchen": return { color: "bg-orange-500", text: "Bộ phận Bếp", icon: LogIn, accent: "text-orange-500" };
       default: return { color: "bg-blue-600", text: "Nhân viên phục vụ", icon: UserCheck, accent: "text-blue-600" };
@@ -73,22 +91,22 @@ export default function LoginView({ initialRole = "staff" }: { initialRole?: Use
 
           <div className="p-8">
             {/* Role Selector */}
-            <div className="flex bg-gray-50 p-1.5 rounded-2xl mb-8 gap-1">
+            <div className="flex bg-gray-50 p-1.5 rounded-2xl mb-8 gap-1 overflow-x-auto">
               <button
                 onClick={() => setRole("staff")}
-                className={`flex-1 py-3 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${role === "staff" ? "bg-white shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 whitespace-nowrap ${role === "staff" ? "bg-white shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
               >
                 Phục vụ
               </button>
               <button
                 onClick={() => setRole("kitchen")}
-                className={`flex-1 py-3 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${role === "kitchen" ? "bg-white shadow-sm text-orange-500" : "text-gray-400 hover:text-gray-600"}`}
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 whitespace-nowrap ${role === "kitchen" ? "bg-white shadow-sm text-orange-500" : "text-gray-400 hover:text-gray-600"}`}
               >
                 Bếp
               </button>
               <button
                 onClick={() => setRole("admin")}
-                className={`flex-1 py-3 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${role === "admin" ? "bg-white shadow-sm text-purple-600" : "text-gray-400 hover:text-gray-600"}`}
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 whitespace-nowrap ${role === "admin" ? "bg-white shadow-sm text-purple-600" : "text-gray-400 hover:text-gray-600"}`}
               >
                 Quản trị
               </button>

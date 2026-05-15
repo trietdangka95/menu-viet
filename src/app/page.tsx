@@ -31,7 +31,7 @@ function HomeContent() {
 
   const {
     getTotalItems, toggleCart, toggleOrders, orders, isAdmin, logout,
-    userRole, setUserRole, selectedTable, setSelectedTable, tables
+    userRole, selectedTable, setSelectedTable, tables
   } = useCartStore();
 
   const products = productsData || [];
@@ -42,9 +42,6 @@ function HomeContent() {
     .slice(0, 5);
 
   useEffect(() => {
-    const roleParam = searchParams.get("role");
-    if (roleParam === "staff") setUserRole("staff");
-
     const t = searchParams.get("table") || searchParams.get("tables");
     if (t) {
       const formattedTable = t.length === 1 ? t.padStart(2, "0") : t;
@@ -54,7 +51,7 @@ function HomeContent() {
       
       const isStaffOrAdmin = userRole === "admin" || userRole === "staff" || userRole === "kitchen";
       if (!isStaffOrAdmin && userRole !== "guest") {
-        setUserRole("guest");
+        logout(); // Reset to guest
       }
     } else {
       if (userRole === "guest" && selectedTable !== "") {
@@ -65,7 +62,7 @@ function HomeContent() {
     if (storeCategories.length > 0 && !activeTab) {
       setActiveTab(storeCategories[0]);
     }
-  }, [storeCategories, tableParam, setSelectedTable, setUserRole, userRole, selectedTable]);
+  }, [storeCategories, tableParam, setSelectedTable, logout, userRole, selectedTable, searchParams, activeTab]);
 
   const scrollToCategory = (categoryName: string) => {
     setActiveTab(categoryName);

@@ -6,11 +6,19 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import LoginView from "@/components/auth/LoginView";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const { userRole } = useCartStore();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Prevent rendering until client hydration is complete
+  if (!mounted) return null;
 
   // Kiểm tra quyền truy cập
   const hasAdminAccess = userRole === "admin";

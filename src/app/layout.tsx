@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import MobileBottomNav from "@/components/layout/MobileBottomNav";
-import CartDrawer from "@/components/CartDrawer";
-import OrdersDrawer from "@/components/OrdersDrawer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,6 +10,9 @@ export const metadata: Metadata = {
 };
 
 import Providers from "@/components/Providers";
+import StoreInitializer from "@/components/layout/StoreInitializer";
+import { Suspense } from "react";
+import CustomerUI from "@/components/layout/CustomerUI";
 
 export default function RootLayout({
   children,
@@ -23,10 +23,11 @@ export default function RootLayout({
     <html lang="vi" className="bg-[#fdfbf7]">
       <body className={`${inter.className} min-h-screen text-gray-900`} suppressHydrationWarning={true}>
         <Providers>
+          <Suspense fallback={null}>
+            <StoreInitializer />
+          </Suspense>
           {children}
-          <CartDrawer />
-          <OrdersDrawer />
-          <MobileBottomNav />
+          <CustomerUI />
         </Providers>
       </body>
     </html>
