@@ -2,7 +2,7 @@
 "use client";
 
 import { Order } from "@/store/cartStore";
-import { X, Check, ArrowRight, Clock } from "lucide-react";
+import { Check, ArrowRight, Clock } from "lucide-react";
 
 interface OrderTicketProps {
   order: Order;

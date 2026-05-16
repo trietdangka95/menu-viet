@@ -6,13 +6,11 @@ import {
   LayoutDashboard,
   Settings,
   LogOut,
-  ChevronRight,
   TrendingUp,
   Users,
   ShoppingBag
 } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 
 import AdminStatCard from "./components/AdminStatCard";
 import AdminMenuCard from "./components/AdminMenuCard";
@@ -22,9 +20,9 @@ import { useInvoices } from "@/hooks/useInvoices";
 
 export default function AdminDashboard() {
   const { logout } = useCartStore();
-  const { data: products = [], isLoading: productsLoading } = useProducts();
-  const { data: orders = [], isLoading: ordersLoading } = useOrders();
-  const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
+  const { data: products = [] } = useProducts();
+  const { data: orders = [] } = useOrders();
+  const { data: invoices = [] } = useInvoices();
 
   const totalRevenue = invoices.reduce((sum, i) => sum + i.totalAmount, 0);
 
@@ -79,8 +77,8 @@ export default function AdminDashboard() {
       <div className="max-w-5xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">Admin Dashboard</h1>
-            <p className="text-gray-500 font-medium italic">Hệ thống quản lý Menu Việt chuyên nghiệp</p>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 tracking-tight mb-2">Admin Dashboard</h1>
+            <p className="text-sm text-gray-500 font-medium italic">Hệ thống quản lý Menu Việt chuyên nghiệp</p>
           </div>
           <button
             onClick={logout}
@@ -92,7 +90,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
           <AdminStatCard
             icon={TrendingUp}
             value={new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(totalRevenue)}
@@ -122,7 +120,7 @@ export default function AdminDashboard() {
             <div className="w-2 h-8 bg-blue-600 rounded-full"></div>
             <h2 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em]">Quy trình phục vụ</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {operationalItems.map((item, index) => (
               <AdminMenuCard key={item.href} item={item} index={index} />
             ))}

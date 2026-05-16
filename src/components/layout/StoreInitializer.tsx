@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { useSearchParams } from "next/navigation";
 
@@ -8,7 +8,16 @@ export default function StoreInitializer() {
   const { fetchStoreConfig, storeConfig } = useCartStore();
   const searchParams = useSearchParams();
 
+  const [isMounted, setIsMounted] = useState(false);
+
   useEffect(() => {
+    const handle = requestAnimationFrame(() => setIsMounted(true));
+    return () => cancelAnimationFrame(handle);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     // 1. Detect Slug from Subdomain or Query Param
     const host = window.location.hostname;
     const subdomain = host.split(".")[0];
@@ -31,18 +40,17 @@ export default function StoreInitializer() {
     if (!storeConfig || storeConfig.slug !== slug) {
       fetchStoreConfig(slug);
     }
-  }, [fetchStoreConfig, searchParams, storeConfig]);
+  }, [isMounted, fetchStoreConfig, searchParams, storeConfig]);
 
   useEffect(() => {
+    if (!isMounted) return;
+
     // 3. Apply Theme Color to CSS Variables
     if (storeConfig?.themeColor) {
       document.documentElement.style.setProperty("--primary", storeConfig.themeColor);
-      
-      // Calculate a secondary color (slightly lighter or darker)
-      // For now, just set a fixed secondary based on primary
       document.documentElement.style.setProperty("--primary-soft", `${storeConfig.themeColor}1a`); // 10% opacity
     }
-  }, [storeConfig]);
+  }, [isMounted, storeConfig]);
 
   return null;
 }

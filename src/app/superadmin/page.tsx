@@ -2,11 +2,9 @@
 
 import { motion } from "framer-motion";
 import { 
-  Users, 
   Store, 
   TrendingUp, 
   Activity, 
-  ChevronRight, 
   PlusCircle,
   ShieldCheck,
   Package

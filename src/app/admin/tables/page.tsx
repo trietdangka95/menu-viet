@@ -8,7 +8,7 @@ import {
   QrCode as QrCodeIcon,
   Printer as PrinterIcon
 } from "lucide-react";
-import { useCartStore, Order } from "@/store/cartStore";
+import { useCartStore, Order, OrderStatus } from "@/store/cartStore";
 import TableStatusCard from "./components/TableStatusCard";
 import QRCodeCard from "./components/QRCodeCard";
 import { useOrders, useClearTable, useConfirmOrder } from "@/hooks/useOrders";
@@ -18,7 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminTablesPage() {
   const { tables, addTable, addMultipleTables, removeTable } = useCartStore();
-  const { data: apiOrders = [], isLoading } = useOrders();
+  const { data: apiOrders = [] } = useOrders();
   const clearTableMutation = useClearTable();
   const confirmOrderMutation = useConfirmOrder();
   const isMounted = useIsMounted();
@@ -44,7 +44,7 @@ export default function AdminTablesPage() {
 
   const orders = apiOrders.map(o => ({
     ...o,
-    status: o.status.toLowerCase() as any,
+    status: o.status.toLowerCase() as OrderStatus,
     timestamp: new Date(o.createdAt).getTime(),
     isConfirmed: o.status !== 'PENDING',
     items: o.items.map(i => ({
@@ -61,12 +61,8 @@ export default function AdminTablesPage() {
     totalPrice: o.totalAmount || o.items.reduce((sum, i) => sum + (i.product?.price || 0) * i.quantity, 0)
   }));
   const [activeTab, setActiveTab] = useState<"status" | "qr">("status");
-  const [baseUrl, setBaseUrl] = useState("");
   const [newTableNum, setNewTableNum] = useState("");
-
-  useEffect(() => {
-    setBaseUrl(window.location.origin);
-  }, []);
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const tableStatus = orders.reduce((acc, order) => {
     const tNum = order.tableNumber || "??";

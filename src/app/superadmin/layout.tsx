@@ -16,19 +16,25 @@ export default function SuperAdminLayout({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const handle = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(handle);
   }, []);
 
   useEffect(() => {
-    if (mounted && (!isLoggedIn || userRole !== "superadmin")) {
-      router.push("/");
+    if (!mounted) return;
+
+    const role = userRole?.toLowerCase();
+    if (!isLoggedIn || role !== "superadmin") {
+      console.log("Access denied for role:", userRole);
+      router.push("/super-login");
     }
   }, [isLoggedIn, userRole, router, mounted]);
 
   // Prevent rendering anything until hydration is complete
   if (!mounted) return null;
 
-  if (userRole !== "superadmin") {
+  const role = userRole?.toLowerCase();
+  if (role !== "superadmin") {
     return null;
   }
 

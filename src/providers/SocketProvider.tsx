@@ -47,9 +47,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setIsConnected(false);
     });
 
-    setSocket(socketInstance);
+    const handle = requestAnimationFrame(() => setSocket(socketInstance));
 
     return () => {
+      cancelAnimationFrame(handle);
       socketInstance.disconnect();
     };
   }, [userRole, selectedTable]);

@@ -5,15 +5,13 @@ import {
   Store, 
   Plus, 
   Search, 
-  MoreVertical, 
   ExternalLink, 
   ToggleLeft, 
   ToggleRight,
   Trash2,
   Edit,
   Layout,
-  Globe,
-  Settings
+  Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStores, useCreateStore, useUpdateStore, useDeleteStore } from "@/hooks/useSuperAdmin";
@@ -97,7 +95,7 @@ export default function StoreManagementPage() {
         ) : stores.length === 0 ? (
           <div className="bg-white p-20 rounded-[3rem] text-center border-2 border-dashed border-gray-200">
             <Store size={64} className="mx-auto text-gray-200 mb-6" />
-            <p className="text-xl font-bold text-gray-400">No stores found. Let's create your first one!</p>
+            <p className="text-xl font-bold text-gray-400">No stores found. Let&apos;s create your first one!</p>
           </div>
         ) : (
           stores.map((store) => (

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import axiosInstance from "@/api/axiosInstance";
 
 export type UserRole = "admin" | "staff" | "kitchen" | "guest" | "superadmin";
 
@@ -191,13 +192,10 @@ export const useCartStore = create<CartStore>()(
 
       fetchStoreConfig: async (slug) => {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3000'}/stores/config?slug=${slug}`);
-          if (response.ok) {
-            const config = await response.json();
-            set({ storeConfig: config });
-          } else {
-            console.error('Failed to fetch store config');
-          }
+          // Import axiosInstance dynamically or use it if available in scope
+          // For now, using it directly assuming it's imported or will be handled
+          const response = await axiosInstance.get(`/stores/config?slug=${slug}`);
+          set({ storeConfig: response.data });
         } catch (error) {
           console.error('Error fetching store config:', error);
         }

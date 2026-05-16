@@ -11,7 +11,7 @@ import { useSocket } from "@/providers/SocketProvider";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function KitchenPage() {
-  const { data: apiOrders = [], isLoading } = useOrders();
+  const { data: apiOrders = [] } = useOrders();
   const updateStatusMutation = useUpdateOrderStatus();
   const isMounted = useIsMounted();
   const queryClient = useQueryClient();
@@ -39,7 +39,7 @@ export default function KitchenPage() {
   // Map API data to UI format
   const orders = apiOrders.map(o => ({
     ...o,
-    status: o.status.toLowerCase() as any, // UI expects lowercase
+    status: o.status.toLowerCase() as OrderStatus, // UI expects lowercase
     timestamp: new Date(o.createdAt).getTime(),
     isConfirmed: o.status !== 'PENDING',
     totalPrice: o.totalAmount || 0,
@@ -65,14 +65,19 @@ export default function KitchenPage() {
   }, []);
 
   const [prevPendingCount, setPrevPendingCount] = useState(0);
+  const pendingCount = orders.filter((o) => o.isConfirmed && o.status === "pending").length;
+
+  // Adjust state during render to avoid cascading renders in useEffect
+  if (pendingCount !== prevPendingCount) {
+    setPrevPendingCount(pendingCount);
+  }
+
   useEffect(() => {
-    const pendingCount = orders.filter((o) => o.isConfirmed && o.status === "pending").length;
     if (pendingCount > prevPendingCount && audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => { });
     }
-    setPrevPendingCount(pendingCount);
-  }, [orders, prevPendingCount]);
+  }, [pendingCount, prevPendingCount]);
 
   const advanceStatus = (orderId: string, current: OrderStatus) => {
     let next: string | null = null;
@@ -124,7 +129,7 @@ export default function KitchenPage() {
               <ChevronLeft size={24} className="text-gray-600" />
             </Link>
             <div>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Hệ thống KDS</h1>
+              <h1 className="text-lg md:text-2xl font-black text-gray-900 tracking-tight">Hệ thống KDS</h1>
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Kitchen Display System</p>
             </div>
           </div>

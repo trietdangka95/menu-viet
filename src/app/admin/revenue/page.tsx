@@ -1,13 +1,13 @@
 "use client";
 
 import { useInvoices } from "@/hooks/useInvoices";
-import { ChevronLeft, DollarSign, TrendingUp, Calendar, CreditCard, Search } from "lucide-react";
+import { ChevronLeft, TrendingUp, Calendar, CreditCard, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
 export default function RevenuePage() {
-  const { data: apiInvoices = [], isLoading } = useInvoices();
+  const { data: apiInvoices = [] } = useInvoices();
   const [searchTerm, setSearchTerm] = useState("");
 
   const revenue = apiInvoices.map(inv => ({

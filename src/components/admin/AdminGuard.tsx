@@ -1,11 +1,8 @@
 "use client";
 
 import { useCartStore } from "@/store/cartStore";
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
-import { motion } from "framer-motion";
 import LoginView from "@/components/auth/LoginView";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
@@ -14,7 +11,8 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const handle = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(handle);
   }, []);
 
   // Prevent rendering until client hydration is complete

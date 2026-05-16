@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { X, ShoppingCart, Plus } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
 

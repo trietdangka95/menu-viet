@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { menuApi } from "@/api/menu";
+import { MenuItem } from "@/store/cartStore";
 
 export const useProducts = () => {
   return useQuery({
@@ -28,7 +29,7 @@ export const useCreateProduct = () => {
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => menuApi.updateProduct(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<MenuItem> }) => menuApi.updateProduct(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },

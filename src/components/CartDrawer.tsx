@@ -3,7 +3,6 @@
 import { useCartStore } from "@/store/cartStore";
 import { X, Minus, Plus, ShoppingBag } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
 import { useCreateOrder } from "@/hooks/useOrders";
 
 export default function CartDrawer() {
@@ -38,7 +37,7 @@ export default function CartDrawer() {
         toggleCart();
         toggleOrders();
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         alert(error.message || "Không thể gửi đơn hàng. Vui lòng thử lại!");
       }
     });

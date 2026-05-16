@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ordersApi } from "@/api/orders";
 import { tablesApi } from "@/api/tables";
+import { OrderStatus } from "@/store/cartStore";
 
 export const useOrders = () => {
   return useQuery({
@@ -32,7 +33,7 @@ export const useConfirmOrder = () => {
 export const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: any }) => ordersApi.updateStatus(id, status),
+    mutationFn: ({ id, status }: { id: string; status: OrderStatus }) => ordersApi.updateStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },

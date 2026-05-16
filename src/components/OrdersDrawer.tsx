@@ -27,7 +27,6 @@ export default function OrdersDrawer() {
   const tableOrdersQuery = useTableOrders(selectedTable);
 
   const apiOrders = isStaff ? (allOrdersQuery.data || []) : (tableOrdersQuery.data || []);
-  const isLoading = isStaff ? allOrdersQuery.isLoading : tableOrdersQuery.isLoading;
 
   const confirmOrderMutation = useConfirmOrder();
   const updateStatusMutation = useUpdateOrderStatus();
@@ -55,7 +54,7 @@ export default function OrdersDrawer() {
   // Map API data to UI format if necessary (handle casing or field names)
   const orders = apiOrders.map(o => ({
     ...o,
-    status: o.status.toLowerCase() as any, // UI expects lowercase
+    status: o.status.toLowerCase() as "pending" | "cooking" | "serving" | "completed", // UI expects lowercase
     timestamp: new Date(o.createdAt).getTime(),
     isConfirmed: o.status !== 'PENDING', // In API, PENDING means unconfirmed
     items: o.items.map(i => ({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Check, Loader2, UserCircle, ShieldCheck, Key } from "lucide-react";
+import { Lock, Check, Loader2, UserCircle, Key } from "lucide-react";
 import { useUsers, useUpdateUserPassword } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 

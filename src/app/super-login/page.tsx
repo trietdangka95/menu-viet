@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCartStore, UserRole } from "@/store/cartStore";
+import { useCartStore } from "@/store/cartStore";
 import { ShieldAlert, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -26,16 +26,17 @@ export default function SuperAdminLogin() {
       console.log("Login API Response:", res);
 
       if (res.role?.toLowerCase() === "superadmin" || res.role === "SUPER_ADMIN") {
-        storeLogin("superadmin" as UserRole, res.id, res.storeId);
+        storeLogin("superadmin", res.id, res.storeId);
         router.push("/superadmin");
       } else {
         console.error("Role mismatch. Expected SUPER_ADMIN, got:", res.role);
         setError(true);
         setTimeout(() => setError(false), 2000);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Login failed with error:", err);
-      alert("Lỗi chi tiết: " + (err.message || JSON.stringify(err)));
+      const message = err instanceof Error ? err.message : String(err);
+      alert("Lỗi chi tiết: " + message);
       setError(true);
       setTimeout(() => setError(false), 2000);
     }

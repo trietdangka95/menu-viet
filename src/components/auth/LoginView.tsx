@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useCartStore, UserRole } from "@/store/cartStore";
-import { Lock, ChevronLeft, LogIn, UserCheck, ShieldCheck, ShieldAlert } from "lucide-react";
+import { ChevronLeft, LogIn, UserCheck, ShieldCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -47,7 +47,7 @@ export default function LoginView({ initialRole = "staff" }: { initialRole?: Use
       } else {
         router.push("/");
       }
-    } catch (err) {
+    } catch {
       setError(true);
       setTimeout(() => setError(false), 2000);
     }

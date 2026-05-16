@@ -5,15 +5,14 @@ import { MenuItem } from "@/store/cartStore";
 import MenuItemCard from "@/components/admin/MenuItemRow";
 import MenuItemForm from "@/components/admin/MenuItemForm";
 import { useProducts, useCategories } from "@/hooks/useProducts";
-import { Plus, Search, ChevronLeft, LayoutGrid, List as ListIcon, X } from "lucide-react";
-import Link from "next/link";
+import { Search } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import MenuHeader from "./components/MenuHeader";
 import CategoryManager from "./components/CategoryManager";
 
 export default function AdminMenuPage() {
-  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: products = [] } = useProducts();
   const { data: categoriesData = [] } = useCategories();
 
   const [isFormOpen, setIsFormOpen] = useState(false);

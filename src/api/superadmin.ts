@@ -26,7 +26,7 @@ export const superAdminApi = {
     return data;
   },
   
-  createStore: async (storeData: CreateStoreData): Promise<any> => {
+  createStore: async (storeData: CreateStoreData): Promise<unknown> => {
     const { data } = await axiosInstance.post("/superadmin/stores", storeData);
     return data;
   },

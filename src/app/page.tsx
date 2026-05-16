@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import ProductDetailModal from "@/components/ProductDetailModal";
-import { useCartStore, UserRole } from "@/store/cartStore";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, ClipboardList, Bell, Settings, LayoutDashboard, Soup, LayoutGrid, List as ListIcon, UserCheck, ChevronDown, ShoppingBag, LogOut } from "lucide-react";
+import { useCartStore } from "@/store/cartStore";
+import { motion } from "framer-motion";
+import { LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -26,16 +25,21 @@ function HomeContent() {
   const [activeTab, setActiveTab] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<unknown>(null);
   const [isTableSelectorOpen, setIsTableSelectorOpen] = useState(false);
 
   const {
-    getTotalItems, toggleCart, toggleOrders, orders, isAdmin, logout,
+    getTotalItems, toggleCart, toggleOrders, orders, logout,
     userRole, selectedTable, setSelectedTable, tables
   } = useCartStore();
 
-  const products = productsData || [];
+  const products = useMemo(() => productsData || [], [productsData]);
   const storeCategories = useMemo(() => categoriesData?.map(c => c.name) || [], [categoriesData]);
+
+  // Adjust state during render to avoid cascading renders in useEffect
+  if (storeCategories.length > 0 && !activeTab) {
+    setActiveTab(storeCategories[0]);
+  }
 
   const banners = useMemo(() => products
     .filter(item => item.bannerUrl && item.promoTitle && item.promoDescription && (item.discountPercent || 0) > 0)
@@ -58,11 +62,7 @@ function HomeContent() {
         setSelectedTable("");
       }
     }
-
-    if (storeCategories.length > 0 && !activeTab) {
-      setActiveTab(storeCategories[0]);
-    }
-  }, [storeCategories, tableParam, setSelectedTable, logout, userRole, selectedTable, searchParams, activeTab]);
+  }, [tableParam, setSelectedTable, logout, userRole, selectedTable, searchParams]);
 
   const scrollToCategory = (categoryName: string) => {
     setActiveTab(categoryName);
@@ -124,7 +124,7 @@ function HomeContent() {
 
             return (
               <div key={cat} id={`category-${cat}`} className="scroll-mt-60">
-                <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
                   <span className="w-1.5 h-6 md:h-8 bg-primary rounded-full"></span>
                   {cat}
                 </h3>

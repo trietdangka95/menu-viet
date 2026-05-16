@@ -14,10 +14,18 @@ export default function OrderStatusModal({
 }) {
   const [status, setStatus] = useState<OrderStatus>("pending");
 
+  // Reset status during render phase when opening to avoid cascading renders in useEffect
+  const [lastIsOpen, setLastIsOpen] = useState(isOpen);
+  if (isOpen && !lastIsOpen) {
+    setStatus("pending");
+    setLastIsOpen(true);
+  } else if (!isOpen && lastIsOpen) {
+    setLastIsOpen(false);
+  }
+
   // Giả lập trạng thái đơn hàng thay đổi theo thời gian
   useEffect(() => {
     if (isOpen) {
-      setStatus("pending");
       const cookingTimer = setTimeout(() => setStatus("cooking"), 5000);
       const completeTimer = setTimeout(() => setStatus("completed"), 12000);
 

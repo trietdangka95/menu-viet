@@ -17,9 +17,12 @@ export default function MobileBottomNav() {
 
   useEffect(() => {
     if (activeOrdersCount > 0) {
-      setPopOrder(true);
+      const handle = requestAnimationFrame(() => setPopOrder(true));
       const timer = setTimeout(() => setPopOrder(false), 300);
-      return () => clearTimeout(timer);
+      return () => {
+        cancelAnimationFrame(handle);
+        clearTimeout(timer);
+      };
     }
   }, [activeOrdersCount]);
 

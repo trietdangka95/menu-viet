@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { MenuItem } from "@/store/cartStore";
-import { X, Upload, Save, Image as ImageIcon, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { X, Upload, Save, Loader2 } from "lucide-react";
 import { useCreateProduct, useUpdateProduct, useCategories, useUploadImage } from "@/hooks/useProducts";
 
 interface MenuItemFormProps {
@@ -31,6 +32,7 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
   });
 
   const [priceInput, setPriceInput] = useState(item?.price?.toString() || "0");
+  const [previewError, setPreviewError] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,7 +44,8 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
       // We need to prepend the API URL for full URL
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
       setFormData({ ...formData, image: `${API_URL}${result.url}` });
-    } catch (err) {
+      setPreviewError(false);
+    } catch {
       alert("Lỗi khi tải ảnh lên!");
     }
   };
@@ -183,7 +186,10 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
                   <input
                     type="text"
                     value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, image: e.target.value });
+                      setPreviewError(false);
+                    }}
                     className="flex-1 px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-orange-500 outline-none transition-all font-medium text-gray-600 text-sm"
                     placeholder="Dán link ảnh (URL)..."
                   />
@@ -205,17 +211,19 @@ export default function MenuItemForm({ item, onClose }: MenuItemFormProps) {
                 
                 {formData.image && (
                   <div className="relative w-full h-40 rounded-2xl overflow-hidden border-2 border-gray-50 bg-gray-50">
-                    <img 
-                      src={formData.image} 
+                    <Image 
+                      src={previewError ? 'https://placehold.co/600x400?text=Lỗi+ảnh' : formData.image} 
                       alt="Preview" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://placehold.co/600x400?text=Lỗi+ảnh';
-                      }}
+                      fill
+                      className="object-cover"
+                      onError={() => setPreviewError(true)}
                     />
                     <button 
                       type="button"
-                      onClick={() => setFormData({ ...formData, image: "" })}
+                      onClick={() => {
+                        setFormData({ ...formData, image: "" });
+                        setPreviewError(false);
+                      }}
                       className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
                     >
                       <X size={14} />

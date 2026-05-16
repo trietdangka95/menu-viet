@@ -44,7 +44,7 @@ export default function CredentialsPage() {
         setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
         setTimeout(() => setShowSuccess(false), 3000);
       },
-      onError: (err: any) => {
+      onError: (err: Error) => {
         setError(err.message || "Mật khẩu cũ không chính xác hoặc có lỗi xảy ra!");
       }
     });
