@@ -7,14 +7,15 @@ export interface MenuItem {
   id: string;
   name: string;
   price: number;
-  description: string;
-  image: string;
+  description?: string;
+  image?: string;
   category: string;
   categoryId: number;
   discountPercent?: number;
   bannerUrl?: string;
   promoTitle?: string;
   promoDescription?: string;
+  isAvailable?: boolean;
 }
 
 export interface CartItem extends MenuItem {
@@ -23,13 +24,16 @@ export interface CartItem extends MenuItem {
   note: string;
 }
 
+export type OrderStatus = "pending" | "cooking" | "serving" | "completed" | "cancelled";
+
 export interface Order {
   id: string;
   tableNumber: string;
   items: CartItem[];
   totalPrice: number;
-  status: "pending" | "cooking" | "serving" | "completed" | "cancelled";
-  timestamp: string;
+  status: OrderStatus;
+  isConfirmed?: boolean;
+  timestamp: string | number;
 }
 
 export interface StoreConfig {
@@ -73,6 +77,12 @@ interface CartStore {
   clearCart: () => void;
   setSelectedTable: (table: string) => void;
   setIsTableSelectorOpen: (open: boolean) => void;
+  
+  // Tables Management
+  tables: string[];
+  addTable: (table: string) => void;
+  addMultipleTables: (count: number) => void;
+  removeTable: (table: string) => void;
   
   // Orders & Revenue (Mocked for now, should be API-driven)
   orders: Order[];
@@ -153,6 +163,21 @@ export const useCartStore = create<CartStore>()(
       setSelectedTable: (table) => set({ selectedTable: table }),
       setIsTableSelectorOpen: (open) => set({ isTableSelectorOpen: open }),
       
+      tables: ["01", "02", "03", "04", "05"], // Mặc định
+      addTable: (table) => set((state) => ({ 
+        tables: [...state.tables, table].sort((a, b) => a.localeCompare(b)) 
+      })),
+      addMultipleTables: (count) => set((state) => {
+        const lastNum = state.tables.length > 0 ? parseInt(state.tables[state.tables.length - 1] || "0") : 0;
+        const newTables = Array.from({ length: count }, (_, i) => 
+          (lastNum + i + 1).toString().padStart(2, "0")
+        );
+        return { tables: [...state.tables, ...newTables] };
+      }),
+      removeTable: (table) => set((state) => ({ 
+        tables: state.tables.filter((t) => t !== table) 
+      })),
+      
       orders: [],
       addOrder: (order) => set({ orders: [order, ...get().orders] }),
       
@@ -187,6 +212,7 @@ export const useCartStore = create<CartStore>()(
         userId: state.userId,
         userStoreId: state.userStoreId,
         selectedTable: state.selectedTable,
+        tables: state.tables,
         storeConfig: state.storeConfig,
       }),
     }

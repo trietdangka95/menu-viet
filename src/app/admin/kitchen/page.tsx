@@ -49,6 +49,9 @@ export default function KitchenPage() {
       name: i.product?.name || 'Món ăn',
       image: i.product?.image || '',
       price: i.product?.price || 0,
+      description: i.product?.description || '',
+      category: i.product?.category || '',
+      categoryId: i.product?.categoryId || 0,
       note: i.note || '',
     }))
   }));

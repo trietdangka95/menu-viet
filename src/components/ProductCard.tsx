@@ -7,11 +7,12 @@ import { motion } from "framer-motion";
 
 type Product = {
   id: string;
-  categoryId: string;
+  categoryId: number;
   name: string;
-  description: string;
+  description?: string;
   price: number;
-  image: string;
+  image?: string;
+  category: string;
   isNew?: boolean;
   isHot?: boolean;
   discountPercent?: number;
@@ -25,7 +26,7 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
   const hasDiscount = discountPercent > 0;
   const finalPrice = hasDiscount ? product.price * (1 - discountPercent / 100) : product.price;
 
-  const getImageUrl = (url: string) => {
+  const getImageUrl = (url: string | undefined) => {
     if (!url) return 'https://placehold.co/600x400?text=No+Image';
     if (url.startsWith('http')) return url;
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -39,10 +40,14 @@ export default function ProductCard({ product, viewMode = "list" }: { product: P
       return;
     }
     addItem({
+      id: product.id,
       productId: product.id,
       name: product.name,
       price: finalPrice,
       image: product.image,
+      category: product.category,
+      categoryId: product.categoryId,
+      description: product.description,
       quantity: 1,
       note: "",
     });

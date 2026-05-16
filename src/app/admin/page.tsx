@@ -43,7 +43,7 @@ export default function AdminDashboard() {
       icon: Soup,
       href: "/admin/kitchen",
       color: "bg-orange-500",
-      stats: `${orders.filter(o => o.status === "pending" || o.status === "cooking").length} đơn đang chờ`
+      stats: `${orders.filter(o => o.status === "PENDING" || o.status === "COOKING").length} đơn đang chờ`
     }
   ];
 

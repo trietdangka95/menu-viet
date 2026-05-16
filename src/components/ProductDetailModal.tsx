@@ -8,9 +8,11 @@ import { useCartStore } from "@/store/cartStore";
 interface Product {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   price: number;
-  image: string;
+  image?: string;
+  category: string;
+  categoryId: number;
 }
 
 interface ProductDetailModalProps {
@@ -29,17 +31,21 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
       return;
     }
     addItem({
+      id: product.id,
       productId: product.id,
       name: product.name,
       price: product.price,
       image: product.image,
+      category: product.category,
+      categoryId: product.categoryId,
+      description: product.description,
       quantity: 1,
       note: "",
     });
     onClose();
   };
 
-  const getImageUrl = (url: string) => {
+  const getImageUrl = (url: string | undefined) => {
     if (!url) return 'https://placehold.co/600x400?text=No+Image';
     if (url.startsWith('http')) return url;
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';

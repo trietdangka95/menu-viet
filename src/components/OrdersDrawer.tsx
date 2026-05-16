@@ -14,7 +14,7 @@ export default function OrdersDrawer() {
   const queryClient = useQueryClient();
   const { socket } = useSocket();
 
-  const getImageUrl = (url: string) => {
+  const getImageUrl = (url: string | undefined) => {
     if (!url) return 'https://placehold.co/600x400?text=No+Image';
     if (url.startsWith('http')) return url;
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';

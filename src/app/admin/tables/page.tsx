@@ -8,7 +8,7 @@ import {
   QrCode as QrCodeIcon,
   Printer as PrinterIcon
 } from "lucide-react";
-import { useCartStore } from "@/store/cartStore";
+import { useCartStore, Order } from "@/store/cartStore";
 import TableStatusCard from "./components/TableStatusCard";
 import QRCodeCard from "./components/QRCodeCard";
 import { useOrders, useClearTable, useConfirmOrder } from "@/hooks/useOrders";
@@ -46,12 +46,16 @@ export default function AdminTablesPage() {
     ...o,
     status: o.status.toLowerCase() as any,
     timestamp: new Date(o.createdAt).getTime(),
+    isConfirmed: o.status !== 'PENDING',
     items: o.items.map(i => ({
       ...i,
       id: i.productId,
       name: i.product?.name || 'Món ăn',
       image: i.product?.image || '',
       price: i.product?.price || 0,
+      description: i.product?.description || '',
+      category: i.product?.category || '',
+      categoryId: i.product?.categoryId || 0,
       note: i.note || '',
     })),
     totalPrice: o.totalAmount || o.items.reduce((sum, i) => sum + (i.product?.price || 0) * i.quantity, 0)

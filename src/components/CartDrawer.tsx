@@ -10,7 +10,7 @@ export default function CartDrawer() {
   const { items, isOpen, toggleCart, removeItem, updateQuantity, getTotalItems, getTotalPrice, clearCart, toggleOrders, selectedTable } = useCartStore();
   const createOrder = useCreateOrder();
 
-  const getImageUrl = (url: string) => {
+  const getImageUrl = (url: string | undefined) => {
     if (!url) return 'https://placehold.co/600x400?text=No+Image';
     if (url.startsWith('http')) return url;
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';

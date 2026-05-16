@@ -1,13 +1,14 @@
 export interface User {
   id: string;
   username: string;
-  role: 'ADMIN' | 'STAFF' | 'KITCHEN' | 'PUBLIC';
+  role: 'ADMIN' | 'STAFF' | 'KITCHEN' | 'PUBLIC' | 'SUPER_ADMIN';
 }
 
 export interface AuthResponse {
   token: string;
-  role: 'ADMIN' | 'STAFF' | 'KITCHEN' | 'PUBLIC';
+  role: 'ADMIN' | 'STAFF' | 'KITCHEN' | 'PUBLIC' | 'SUPER_ADMIN';
   id: string;
+  storeId?: string;
 }
 
 export interface Category {
