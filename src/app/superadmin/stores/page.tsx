@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStores, useCreateStore, useUpdateStore, useDeleteStore } from "@/hooks/useSuperAdmin";
+import { Store as StoreData } from "@/api/superadmin";
 
 export default function StoreManagementPage() {
   const { data: stores = [], isLoading } = useStores();
@@ -92,7 +93,7 @@ export default function StoreManagementPage() {
     });
   };
 
-  const handleEdit = (store: Store) => {
+  const handleEdit = (store: StoreData) => {
     setEditingStoreId(store.id);
     setFormData({
       name: store.name,

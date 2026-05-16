@@ -1,6 +1,7 @@
 "use client";
 
 import { OrderStatus } from "@/store/cartStore";
+import { OrderStatus as ApiOrderStatus } from "@/types/api";
 import { useEffect, useState, useRef } from "react";
 import OrderTicket from "@/components/kitchen/OrderTicket";
 import { LayoutGrid, List } from "lucide-react";
@@ -79,7 +80,7 @@ export default function KitchenPage() {
   }, [pendingCount, prevPendingCount]);
 
   const advanceStatus = (orderId: string, current: OrderStatus) => {
-    let next: string | null = null;
+    let next: ApiOrderStatus | null = null;
     if (current === "pending") next = "COOKING";
     else if (current === "cooking") next = "SERVING";
     else if (current === "serving") next = "COMPLETED";

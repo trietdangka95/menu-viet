@@ -14,6 +14,7 @@ import HomeHeader from "@/components/home/HomeHeader";
 import BannerSlider from "@/components/home/BannerSlider";
 import CategoryTabs from "@/components/home/CategoryTabs";
 import { useProducts, useCategories } from "@/hooks/useProducts";
+import { Product } from "@/types/api";
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -25,7 +26,7 @@ function HomeContent() {
   const [activeTab, setActiveTab] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
-  const [selectedProduct, setSelectedProduct] = useState<unknown>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isTableSelectorOpen, setIsTableSelectorOpen] = useState(false);
 
   const {

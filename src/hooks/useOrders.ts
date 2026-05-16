@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ordersApi } from "@/api/orders";
 import { tablesApi } from "@/api/tables";
-import { OrderStatus } from "@/store/cartStore";
+import { OrderStatus } from "@/types/api";
 
 export const useOrders = () => {
   return useQuery({

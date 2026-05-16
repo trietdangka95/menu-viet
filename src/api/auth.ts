@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance';
-import { AuthResponse } from '@/types/api';
+import { AuthResponse, User } from '@/types/api';
 
 export const authApi = {
   login: async (credentials: Record<string, string>): Promise<AuthResponse> => {
@@ -25,8 +25,8 @@ export const authApi = {
     await axiosInstance.post('/auth/change-password', passwords);
   },
 
-  getUsers: async (): Promise<unknown[]> => {
-    const response = await axiosInstance.get('/auth/users');
+  getUsers: async (): Promise<User[]> => {
+    const response = await axiosInstance.get<User[]>('/auth/users');
     return response.data;
   },
 
