@@ -14,7 +14,7 @@ export default function StoreInitializer() {
     const subdomain = host.split(".")[0];
     const storeQuery = searchParams.get("store");
 
-    let slug = "default"; // Fallback to default store
+    let slug = "default";
 
     if (storeQuery) {
       slug = storeQuery;
@@ -27,9 +27,11 @@ export default function StoreInitializer() {
       slug = subdomain;
     }
 
-    // 2. Fetch Config
-    fetchStoreConfig(slug);
-  }, [fetchStoreConfig, searchParams]);
+    // 2. Only Fetch if slug has changed or config is missing
+    if (!storeConfig || storeConfig.slug !== slug) {
+      fetchStoreConfig(slug);
+    }
+  }, [fetchStoreConfig, searchParams, storeConfig]);
 
   useEffect(() => {
     // 3. Apply Theme Color to CSS Variables

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import ProductDetailModal from "@/components/ProductDetailModal";
@@ -35,11 +35,11 @@ function HomeContent() {
   } = useCartStore();
 
   const products = productsData || [];
-  const storeCategories = categoriesData?.map(c => c.name) || [];
+  const storeCategories = useMemo(() => categoriesData?.map(c => c.name) || [], [categoriesData]);
 
-  const banners = products
+  const banners = useMemo(() => products
     .filter(item => item.bannerUrl && item.promoTitle && item.promoDescription && (item.discountPercent || 0) > 0)
-    .slice(0, 5);
+    .slice(0, 5), [products]);
 
   useEffect(() => {
     const t = searchParams.get("table") || searchParams.get("tables");
@@ -75,11 +75,11 @@ function HomeContent() {
     }
   };
 
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = useMemo(() => products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeTab ? product.category === activeTab : true;
     return matchesSearch && matchesCategory;
-  });
+  }), [products, searchQuery, activeTab]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
